@@ -1,5 +1,4 @@
-﻿using MisAPI.Configurations;
-using MisAPI.DTOs;
+﻿using MisAPI.DTOs;
 
 namespace MisAPI.Middlewares;
 
@@ -39,4 +38,5 @@ public class ExceptionMiddleware
             StatusCode = context.Response.StatusCode
         });
     }
+
 }

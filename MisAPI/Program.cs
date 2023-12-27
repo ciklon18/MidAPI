@@ -1,15 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MisAPI.Configurations;
-using MisAPI.Converters;
 using MisAPI.Data;
 using MisAPI.Middlewares;
-using MisAPI.Services.Impls;
-using DbContext = MisAPI.Data.DbContext;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,26 +39,20 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
-builder.Services.AddDbContext<DbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-builder.Services.AddSingleton<JwtSecurityTokenHandler>();
-builder.Services.AddSingleton<Tokens>();
-builder.Services.AddSingleton<JsonDateTimeConverter>();
-
-
-
-builder.Services.AddHostedService<TokenCleanupService>();
-
-
-
-
+builder.Services.AddSingletons(builder.Configuration);
+builder.Services.AddServices();
 
 
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<DatabaseMigrator>().MigrateDatabase();
+
 app.UseExceptionMiddleware();
 
 if (app.Environment.IsDevelopment())
@@ -74,15 +61,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 app.UseAuthentication();
-
 app.UseAuthorization();
-
 app.UseHttpsRedirection();
-
 app.MapControllers();
-
-
  
 app.Run();
+

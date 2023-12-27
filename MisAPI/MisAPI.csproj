@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+      <PackageReference Include="dbup-postgresql" Version="5.0.37" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.14" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.14" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.14">
@@ -19,6 +20,7 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="NLog" Version="5.2.7" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
       <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
@@ -29,6 +31,7 @@
       <Folder Include="Models\Api\" />
       <Folder Include="Models\Request\" />
       <Folder Include="Models\Response\" />
+      <Folder Include="Scripts\Migrations\" />
     </ItemGroup>
 
 </Project>

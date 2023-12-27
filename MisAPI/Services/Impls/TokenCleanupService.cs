@@ -5,14 +5,14 @@ namespace MisAPI.Services.Impls;
 
 public class TokenCleanupService : ITokenCleanupService, IHostedService, IAsyncDisposable
 {
-    private readonly DbContext _db;
+    private readonly ApplicationDbContext _applicationDb;
 
     private Timer _timer = null!;
 
     
     public TokenCleanupService(IServiceProvider serviceProvider)
     {
-        _db = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<DbContext>();
+        _applicationDb = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
     }
     
     
@@ -40,6 +40,6 @@ public class TokenCleanupService : ITokenCleanupService, IHostedService, IAsyncD
     public async ValueTask DisposeAsync()
     {
         await _timer.DisposeAsync();
-        await _db.DisposeAsync();
+        await _applicationDb.DisposeAsync();
     }
 }
