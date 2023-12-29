@@ -1,4 +1,5 @@
 ﻿using MisAPI.DTOs;
+using MisAPI.Exceptions;
 
 namespace MisAPI.Middlewares;
 
@@ -17,10 +18,30 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
-        // catch (InvalidRefreshToken ex)
-        // {
-        //     HandleException(context, ex, StatusCodes.Status400BadRequest);
-        // }
+        catch (InvalidRefreshTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (IncorrectRegisterDataException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status401Unauthorized);
+        }
+        catch (NullTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (IncorrectPhoneException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (UnauthorizedException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status401Unauthorized);
+        }
         catch (Exception ex)
         {
             HandleException(context, ex, StatusCodes.Status500InternalServerError);
@@ -34,7 +55,7 @@ public class ExceptionMiddleware
                                        
         context.Response.WriteAsJsonAsync(new ErrorDto
         {
-            Message = exception.Message,
+            Message = statusCode != 500 ? exception.Message : "Unexpected exception occurred",
             StatusCode = context.Response.StatusCode
         });
     }
