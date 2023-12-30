@@ -27,10 +27,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Mappers\" />
-      <Folder Include="Models\Api\" />
-      <Folder Include="Models\Request\" />
-      <Folder Include="Models\Response\" />
       <Folder Include="Scripts\Migrations\" />
     </ItemGroup>
 

@@ -1,8 +1,9 @@
 ﻿using System.Text.Json.Serialization;
+using MisAPI.Converters;
 
 namespace MisAPI.Enums;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(GenderConverter))]
 public enum Gender
 {
     Male,

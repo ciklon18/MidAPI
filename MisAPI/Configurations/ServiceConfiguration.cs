@@ -1,7 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.ComponentModel;
+using System.IdentityModel.Tokens.Jwt;
 using MisAPI.Converters;
 using MisAPI.Data;
 using MisAPI.Services.Impls;
+using MisAPI.Services.Interfaces;
 
 namespace MisAPI.Configurations;
 
@@ -13,6 +15,8 @@ public static class ServiceConfiguration
         services.AddSingleton<JwtSecurityTokenHandler>();
         services.AddSingleton<Tokens>();
         services.AddSingleton<JsonDateTimeConverter>();
+        services.AddSingleton<GuidConverter>();
+        services.AddSingleton<GenderConverter>();
         services.AddSingleton<DatabaseMigrator>();
 
     }
@@ -20,5 +24,8 @@ public static class ServiceConfiguration
     public static void AddServices(this IServiceCollection services)
     {
         services.AddHostedService<TokenCleanupService>();
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IDoctorService, DoctorService>();
     }
 }

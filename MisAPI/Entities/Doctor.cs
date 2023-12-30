@@ -1,4 +1,5 @@
-﻿using MisAPI.Configurations;
+﻿using System.Runtime.CompilerServices;
+using MisAPI.Configurations;
 using MisAPI.Converters;
 using MisAPI.Enums;
 
@@ -45,7 +46,11 @@ public class Doctor
     public string? Password { get; set; }
 
     [Required]
-    [Column("created_at")]
+    [Column("create_time")]
     [JsonConverter(typeof(JsonDateTimeConverter))]
     public DateTime CreateTime { get; set; }
+    
+    [Required]
+    [Column("speciality_id")]
+    public Guid SpecialityId { get; set; }
 }
