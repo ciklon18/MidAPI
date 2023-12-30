@@ -22,23 +22,21 @@ public class DoctorService : IDoctorService
         _jwtService = jwtService;
     }
 
-    public async Task<DoctorModel> GetDoctorProfileAsync()
+    public async Task<DoctorModel> GetDoctorProfileAsync(Guid doctorId)
     {
-        var doctorId = await GetDoctorGuid();
         await CheckIsRefreshTokenValid(doctorId);
         var doctor = await GetDoctorByGuidAsync(doctorId);
         return Mapper.EntityDoctorToDoctorDto(doctor);
     }
 
 
-    public async Task<IActionResult> UpdateDoctorProfileAsync(DoctorEditModel doctorEditModel)
+    public async Task<IActionResult> UpdateDoctorProfileAsync(Guid doctorId, DoctorEditModel doctorEditModel)
     {
-        var doctorGuid = await GetDoctorGuid();
 
-        await CheckIsEmailInUseAsync(doctorEditModel.Email, doctorGuid);
-        await CheckIsRefreshTokenValid(doctorGuid);
+        await CheckIsEmailInUseAsync(doctorEditModel.Email, doctorId);
+        await CheckIsRefreshTokenValid(doctorId);
 
-        var doctor = await GetDoctorByGuidAsync(doctorGuid);
+        var doctor = await GetDoctorByGuidAsync(doctorId);
         var updatedDoctor = GetUpdatedDoctor(doctor, doctorEditModel);
 
         _db.Doctors.Update(updatedDoctor);

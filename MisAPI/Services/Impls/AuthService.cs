@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using MisAPI.Configurations;
 using MisAPI.Data;
 using MisAPI.Entities;
-using MisAPI.Enums;
 using MisAPI.Exceptions;
 using MisAPI.Models.Request;
 using MisAPI.Models.Response;
@@ -45,9 +44,8 @@ public partial class AuthService : IAuthService
         return new TokenResponseModel { AccessToken = accessToken, RefreshToken = refreshToken };
     }
 
-    public async Task<ResponseModel> Logout()
+    public async Task<ResponseModel> Logout(Guid doctorId)
     {
-        var doctorId = await _jwtService.GetDoctorGuidAsync();
         if (doctorId == Guid.Empty) throw new DoctorNotFoundException("doctor not found");
         var refreshToken = await _jwtService.GetRefreshTokenByGuidAsync(doctorId);
         if (refreshToken == null) throw new NullTokenException("Refresh token not found");

@@ -6,5 +6,5 @@ namespace MisAPI.Controllers;
 [Authorize]
 public abstract class AuthorizeController : BaseController
 {
-    protected Guid UserId => Guid.Parse(User.FindFirstValue("UserID") ?? string.Empty);
+    protected Guid DoctorId => Guid.Parse(User.FindFirstValue("UserID") ?? string.Empty);
 }
