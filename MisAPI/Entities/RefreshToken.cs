@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 
-[Table("refresh_tokens")]
+[Table("Refresh tokens")]
 public class RefreshToken
 {
     [Key]

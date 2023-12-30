@@ -67,7 +67,7 @@ public class JwtService : IJwtService
         CheckTokenNotRevokedAndNotExpired(refreshToken);
     }
 
-    public async Task<Guid> GetPatientGuidAsync()
+    public async Task<Guid> GetDoctorGuidAsync()
     {
         var stringDoctorId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
         var doctorGuid = Guid.Parse(stringDoctorId ?? string.Empty);
