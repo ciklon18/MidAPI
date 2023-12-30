@@ -18,19 +18,20 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
-        catch (InvalidRefreshTokenException ex)
+        catch (DoctorAlreadyExistsException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        catch (IncorrectRegisterDataException ex)
+        
+        catch (DoctorNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status404NotFound);
+        }
+        catch (ExpiredRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        catch (InvalidTokenException ex)
-        {
-            HandleException(context, ex, StatusCodes.Status401Unauthorized);
-        }
-        catch (NullTokenException ex)
+        catch (IncorrectPasswordException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
@@ -38,10 +39,38 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
+        catch (IncorrectRegisterDataException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (IncorrectGenderException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        } 
+        catch (InvalidRefreshTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+
+        catch (InvalidTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status401Unauthorized);
+        }
+        catch (NullEmailException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (NullTokenException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        
         catch (UnauthorizedException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
         }
+
+
         catch (Exception ex)
         {
             HandleException(context, ex, StatusCodes.Status500InternalServerError);
@@ -55,7 +84,7 @@ public class ExceptionMiddleware
                                        
         context.Response.WriteAsJsonAsync(new ErrorDto
         {
-            Message = statusCode != 500 ? exception.Message : "Unexpected exception occurred",
+            Message =  exception.Message,
             StatusCode = context.Response.StatusCode
         });
     }

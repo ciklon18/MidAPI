@@ -1,0 +1,3 @@
+insert into "Doctors" (id, full_name, birth_date, email, phone, gender, password, created_at, speciality_id)
+values  ('2f8f5f76-1beb-4f8f-8629-30242450bcb5', 'Ddd Dscxing', '2023-11-24 19:00:00.000000 +00:00', 'exafmple@mail.ru', '89085783733', 0, '$2a$11$vAxkQvJ5tnWX8KvHDd94X.H2abjq45CQTXzBc1lFdDVw6OYg/7RM2', '2023-12-30 07:50:03.982276 +00:00', '00000000-0000-0000-0000-000000000000'),
+        ('5fd40e19-695c-4398-8670-ca9e8b946c92', 'Ddd Dscxing', '2023-11-24 19:00:00.000000 +00:00', 'exafmpled@mail.ru', '89085783733', 0, '$2a$11$XL84Fzyre6pu77e.4tg97OYll.WUJmbwYJ0B/S5WUYMm93ptUwQ8a', '2023-12-30 07:51:13.161575 +00:00', '3fa85f64-5717-4562-b3fc-2c963f66afa6');

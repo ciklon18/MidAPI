@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using DbUp;
+﻿using DbUp;
 
 namespace MisAPI.Data;
 
@@ -15,18 +14,19 @@ public class DatabaseMigrator
     {
         
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
-        var migrationScriptsPath = _configuration.GetValue<string>("MigrationScriptsPath");
+        var migrationScriptsPath = _configuration.GetConnectionString("MigrationScriptsPath");
+        
+        EnsureDatabase.For.PostgresqlDatabase(connectionString);
+
         
         var runner = DeployChanges.To
             .PostgresqlDatabase(connectionString)
-            .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
-            // .WithScriptsFromFileSystem(migrationScriptsPath)
+            .WithScriptsFromFileSystem(migrationScriptsPath)
             .LogToConsole()
             .LogScriptOutput()
             .WithVariablesDisabled()
             .Build();
         
-        EnsureDatabase.For.PostgresqlDatabase(connectionString);
         
         var result = runner.PerformUpgrade();
         

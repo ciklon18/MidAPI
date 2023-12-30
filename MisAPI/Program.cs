@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MisAPI.Configurations;
 using MisAPI.Data;
@@ -51,7 +52,15 @@ builder.Services.AddServices();
 
 var app = builder.Build();
 
-app.Services.GetRequiredService<DatabaseMigrator>().MigrateDatabase();
+
+var dbContext = app.Services.CreateScope().ServiceProvider.GetService<ApplicationDbContext>();
+
+if (dbContext != null)
+{
+    dbContext.Database.Migrate();
+    var migrator = app.Services.GetRequiredService<DatabaseMigrator>();
+    migrator.MigrateDatabase();
+}
 
 app.UseExceptionMiddleware();
 
