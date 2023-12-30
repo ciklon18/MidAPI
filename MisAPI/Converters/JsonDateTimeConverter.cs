@@ -10,12 +10,6 @@ public class JsonDateTimeConverter : JsonConverter<DateTime>
     {
         var dateTimeString = reader.GetString();
         var parsedDateTime = DateTime.Parse(dateTimeString ?? string.Empty);
-        
-        if (parsedDateTime > DateTime.Now)
-        {
-            throw new JsonException("Date can't be in the future");
-        }
-
         return parsedDateTime;
     }
 
