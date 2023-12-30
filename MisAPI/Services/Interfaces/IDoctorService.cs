@@ -7,6 +7,6 @@ namespace MisAPI.Services.Interfaces;
 
 public interface IDoctorService
 {
-    public Task<DoctorModel> GetDoctorProfileAsync();
-    public Task<IActionResult> UpdateDoctorProfileAsync(DoctorEditModel userEditModel);
+    public Task<DoctorModel> GetDoctorProfileAsync(Guid doctorId);
+    public Task<IActionResult> UpdateDoctorProfileAsync(Guid doctorId, DoctorEditModel userEditModel);
 }

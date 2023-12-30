@@ -30,6 +30,7 @@ public class DoctorController : AuthorizeController
     [HttpPost("login"), AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] DoctorLoginModel doctorLoginModel)
     {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
         var loginResponse = await _authService.Login(doctorLoginModel);
         return Ok(loginResponse);
     }
@@ -38,7 +39,7 @@ public class DoctorController : AuthorizeController
     [HttpPost("logout"), Authorize]
     public Task<ResponseModel> Logout()
     {
-        return _authService.Logout();
+        return _authService.Logout(DoctorId);
     }
 
 
@@ -53,7 +54,7 @@ public class DoctorController : AuthorizeController
     [HttpGet("profile"), Authorize]
     public async Task<DoctorModel> GetProfile()
     {
-        var doctorProfile = await _doctorService.GetDoctorProfileAsync();
+        var doctorProfile = await _doctorService.GetDoctorProfileAsync(DoctorId);
         return doctorProfile;
     }
 
@@ -61,7 +62,8 @@ public class DoctorController : AuthorizeController
     [HttpPut("profile"), Authorize]
     public async Task<IActionResult> EditProfile([FromBody] DoctorEditModel doctorEditModel)
     {
-        await _doctorService.UpdateDoctorProfileAsync(doctorEditModel);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        await _doctorService.UpdateDoctorProfileAsync(DoctorId, doctorEditModel);
         return Ok(new { message = "Profile updated successfully" });
     }
 }

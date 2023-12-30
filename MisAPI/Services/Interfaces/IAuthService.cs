@@ -7,6 +7,6 @@ public interface IAuthService
 {
     Task<RegistrationResponseModel> Register(DoctorRegisterModel doctorRegisterModel);
     Task<TokenResponseModel> Login(DoctorLoginModel doctorLoginModel);
-    Task<ResponseModel> Logout();
+    Task<ResponseModel> Logout(Guid doctorId);
     Task<RefreshResponseModel> Refresh(RefreshRequestModel refreshRequestModel);
 }
