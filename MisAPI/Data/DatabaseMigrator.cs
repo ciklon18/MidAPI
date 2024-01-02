@@ -35,4 +35,6 @@ public class DatabaseMigrator
             throw new Exception("Database migration failed" + result.Error);
         }
     }
+
+
 }

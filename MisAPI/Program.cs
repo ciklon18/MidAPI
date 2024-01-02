@@ -60,6 +60,7 @@ if (dbContext != null)
     dbContext.Database.Migrate();
     var migrator = app.Services.GetRequiredService<DatabaseMigrator>();
     migrator.MigrateDatabase();
+    
 }
 
 app.UseExceptionMiddleware();

@@ -22,7 +22,7 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        
+
         catch (DoctorNotFoundException ex)
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
@@ -30,6 +30,11 @@ public class ExceptionMiddleware
         catch (ExpiredRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidValueForAttributePageException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+
         }
         catch (IncorrectPasswordException ex)
         {
