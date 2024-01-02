@@ -25,4 +25,6 @@ public class Mkb10
     [Column("date")] public DateTime? Date { get; set; }
 
     [Column("parent_id")] public int IdParent { get; set; }
+    
+    [Column("create_time")] public DateTime CreateTime { get; set; } = DateTime.Now.ToUniversalTime();
 }

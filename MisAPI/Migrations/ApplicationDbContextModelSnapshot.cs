@@ -85,6 +85,10 @@ namespace MisAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("addl_code");
 
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("create_time");
+
                     b.Property<DateTime?>("Date")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
@@ -123,6 +127,38 @@ namespace MisAPI.Migrations
                     b.HasKey("IdInt");
 
                     b.ToTable("Mkb10");
+                });
+
+            modelBuilder.Entity("MisAPI.Entities.Mkb10Root", b =>
+                {
+                    b.Property<int>("KeyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("key_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("KeyId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("create_time");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("KeyId");
+
+                    b.ToTable("Mkb10Roots");
                 });
 
             modelBuilder.Entity("MisAPI.Entities.RefreshToken", b =>

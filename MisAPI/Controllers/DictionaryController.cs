@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using MisAPI.Models.Response;
 using MisAPI.Services.Interfaces;
 
@@ -14,16 +15,20 @@ public class DictionaryController : BaseController
     }
 
     [HttpGet("speciality")]
-    public async Task<SpecialtiesPagedListModel> GetSpecialties([FromQuery] string? name, [FromQuery] int page,
-        [FromQuery] int size)
+    public async Task<SpecialtiesPagedListModel> GetSpecialties(
+        [FromQuery] string? name,
+        [FromQuery] [Range(1, int.MaxValue)] int page = 1,
+        [FromQuery] [Range(1, int.MaxValue)] int size = 5)
     {
         var specialties = await _dictionaryService.GetSpecialtiesAsync(name, page, size);
         return specialties;
     }
 
     [HttpGet("icd10")]
-    public async Task<Icd10SearchModel> GetIcd10Diagnoses([FromQuery] string? request, [FromQuery] int page,
-        [FromQuery] int size)
+    public async Task<Icd10SearchModel> GetIcd10Diagnoses(
+        [FromQuery] string? request,
+        [FromQuery] [Range(1, int.MaxValue)] int page = 1,
+        [FromQuery] [Range(1, int.MaxValue)] int size = 5)
     {
         var icd10Diagnoses = await _dictionaryService.GetIcd10DiagnosesAsync(request, page, size);
         return icd10Diagnoses;

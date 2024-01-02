@@ -14,5 +14,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<Doctor> Doctors { get; set; } = null!;
     public DbSet<Specialty> Specialties { get; set; } = null!;
     public DbSet<Mkb10> Mkb10 { get; set; } = null!;
+    public DbSet<Mkb10Root> Mkb10Roots { get; set; } = null!;
     
 }
