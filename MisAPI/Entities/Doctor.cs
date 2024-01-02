@@ -14,14 +14,14 @@ public class Doctor
 {
     [Key] [Column("id")] public Guid Id { get; init; }
 
-    [Column("full_name")]
+    [Column("name")]
     [StringLength(maximumLength: 200)]
 
     [RegularExpression(pattern: EntityConstants.FullNameRegex,
         ErrorMessage = EntityConstants.WrongSymbolInFullNameError)]
     public required string Name { get; set; }
 
-    [Column("birth_date")]
+    [Column("birthday")]
     [JsonConverter(typeof(JsonDateTimeConverter))]
     public DateTime Birthday { get; set; }
 
