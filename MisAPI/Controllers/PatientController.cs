@@ -59,15 +59,17 @@ public class PatientController : AuthorizeController
     {
         return _patientService.GetInspections(id, grouped, icdRoots, page, size, DoctorId);
     }
-    
+
     [HttpGet("{id:guid}")]
     public Task<PatientModel> GetPatientCard([FromRoute] Guid id)
     {
         return _patientService.GetPatientCard(id, DoctorId);
     }
-    
+
     [HttpGet("{id:guid}/inspections/search")]
-    public Task<InspectionShortModel> SearchInspections([Required][FromRoute] Guid id, [FromQuery] string? request)
+    public Task<IEnumerable<InspectionShortModel>> SearchInspections(
+        [Required] [FromRoute] Guid id,
+        [FromQuery] string? request)
     {
         return _patientService.SearchInspections(id, request, DoctorId);
     }

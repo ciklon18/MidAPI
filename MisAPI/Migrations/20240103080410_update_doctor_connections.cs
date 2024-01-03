@@ -10,10 +10,10 @@ namespace MisAPI.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateIndex(
-                name: "IX_Doctors_speciality_id",
-                table: "Doctors",
-                column: "speciality_id");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_Doctors_speciality_id",
+            //     table: "Doctors",
+            //     column: "speciality_id");
             
         }
 
@@ -21,9 +21,9 @@ namespace MisAPI.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
 
-            migrationBuilder.DropIndex(
-                name: "IX_Doctors_speciality_id",
-                table: "Doctors");
+            // migrationBuilder.DropIndex(
+            //     name: "IX_Doctors_speciality_id",
+            //     table: "Doctors");
         }
     }
 }

@@ -14,5 +14,5 @@ public interface IPatientService
     Task<Guid> CreateInspection(Guid id, InspectionCreateModel inspectionCreateModel, Guid doctorId);
     Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, IEnumerable<Guid>? icdRoots, int page, int size, Guid doctorId);
     Task<PatientModel> GetPatientCard(Guid id, Guid doctorId);
-    Task<InspectionShortModel> SearchInspections(Guid id, string? request, Guid doctorId);
+    Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId);
 }
