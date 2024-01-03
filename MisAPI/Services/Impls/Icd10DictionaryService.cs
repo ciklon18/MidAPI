@@ -45,7 +45,7 @@ public class Icd10DictionaryService : IIcd10DictionaryService
     {
         var lowerRequest = request != null ? request.ToLower() : "";
         var diagnoses = _db.Mkb10
-            .Where(d => d.MkbCode.Contains(lowerRequest) || d.MkbName.Contains(lowerRequest));
+            .Where(d => d.MkbCode.ToLower().Contains(lowerRequest) || d.MkbName.ToLower().Contains(lowerRequest));
         var diagnosesCount = await diagnoses.CountAsync();
         var selectedDiagnoses = diagnoses
             .Skip((page - 1) * size)
@@ -70,5 +70,18 @@ public class Icd10DictionaryService : IIcd10DictionaryService
             .Select(r => new Icd10RecordModel(r.Id, r.CreateTime, r.Code, r.Name))
             .ToListAsync();
         return new Icd10RootsResponseModel(roots);
+    }
+
+    public async Task<DiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId)
+    {
+        var diagnosis = await _db.Mkb10.FirstOrDefaultAsync(d => d.IdUuid == icdDiagnosisId);
+        if (diagnosis == null) throw new DiagnosisNotFoundException($"Diagnosis with id = {icdDiagnosisId} not found");
+        return new DiagnosisModel
+        {
+            Id = diagnosis.IdUuid ?? new Guid(),
+            CreateTime = diagnosis.CreateTime,
+            Code = diagnosis.MkbCode,
+            Name = diagnosis.MkbName
+        };
     }
 }
