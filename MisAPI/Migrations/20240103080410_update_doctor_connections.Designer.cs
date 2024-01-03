@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MisAPI.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MisAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240103080410_update_connections_2")]
+    partial class update_connections_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,88 +24,6 @@ namespace MisAPI.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("MisAPI.Entities.Comment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AuthorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("author_id");
-
-                    b.Property<Guid?>("CommentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ConsultationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("consultation_id");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreateTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("create_time");
-
-                    b.Property<DateTime>("ModifyTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("modify_time");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AuthorId");
-
-                    b.HasIndex("CommentId");
-
-                    b.ToTable("Comments");
-                });
-
-            modelBuilder.Entity("MisAPI.Entities.Consultation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<int>("CommentsNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("comments_number");
-
-                    b.Property<DateTime>("CreateTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("create_time");
-
-                    b.Property<Guid>("InspectionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("inspection_id");
-
-                    b.Property<Guid>("RootCommentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("root_comment_id");
-
-                    b.Property<Guid>("SpecialityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("speciality_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InspectionId");
-
-                    b.HasIndex("RootCommentId")
-                        .IsUnique();
-
-                    b.HasIndex("SpecialityId");
-
-                    b.ToTable("Consultations");
-                });
 
             modelBuilder.Entity("MisAPI.Entities.Diagnosis", b =>
                 {
@@ -260,12 +181,84 @@ namespace MisAPI.Migrations
                     b.ToTable("Inspections");
                 });
 
-            modelBuilder.Entity("MisAPI.Entities.Mkb10", b =>
+            modelBuilder.Entity("MisAPI.Entities.InspectionComment", b =>
                 {
-                    b.Property<Guid?>("IdUuid")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConsultationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ModifyTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.ToTable("InspectionComment");
+                });
+
+            modelBuilder.Entity("MisAPI.Entities.InspectionConsultation", b =>
+                {
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id_uuid");
+                        .HasColumnName("id");
+
+                    b.Property<int>("CommentsNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("comments_number");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("create_time");
+
+                    b.Property<Guid>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<Guid>("RootCommentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_comment_id");
+
+                    b.Property<Guid>("SpecialityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("speciality_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionId");
+
+                    b.HasIndex("RootCommentId")
+                        .IsUnique();
+
+                    b.HasIndex("SpecialityId");
+
+                    b.ToTable("InspectionConsultations");
+                });
+
+            modelBuilder.Entity("MisAPI.Entities.Mkb10", b =>
+                {
+                    b.Property<int>("IdInt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id_int");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdInt"));
 
                     b.Property<string>("AddlCode")
                         .HasColumnType("text")
@@ -279,13 +272,13 @@ namespace MisAPI.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
 
-                    b.Property<int>("IdInt")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_int");
-
                     b.Property<int>("IdParent")
                         .HasColumnType("integer")
                         .HasColumnName("parent_id");
+
+                    b.Property<Guid?>("IdUuid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id_uuid");
 
                     b.Property<string>("MkbCode")
                         .IsRequired()
@@ -310,7 +303,7 @@ namespace MisAPI.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("root_id_int");
 
-                    b.HasKey("IdUuid");
+                    b.HasKey("IdInt");
 
                     b.ToTable("Mkb10");
                 });
@@ -407,8 +400,6 @@ namespace MisAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DoctorId");
-
                     b.ToTable("Refresh tokens");
                 });
 
@@ -434,46 +425,36 @@ namespace MisAPI.Migrations
                     b.ToTable("Specialities");
                 });
 
-            modelBuilder.Entity("MisAPI.Entities.Comment", b =>
+            modelBuilder.Entity("MisAPI.Models.Api.DoctorModel", b =>
                 {
-                    b.HasOne("MisAPI.Entities.Doctor", "Author")
-                        .WithMany()
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
-                    b.HasOne("MisAPI.Entities.Comment", null)
-                        .WithMany("Children")
-                        .HasForeignKey("CommentId");
+                    b.Property<DateTime>("Birthday")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Navigation("Author");
-                });
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone");
 
-            modelBuilder.Entity("MisAPI.Entities.Consultation", b =>
-                {
-                    b.HasOne("MisAPI.Entities.Inspection", "Inspection")
-                        .WithMany("Consultations")
-                        .HasForeignKey("InspectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.HasOne("MisAPI.Entities.Comment", "RootComment")
-                        .WithOne("Consultation")
-                        .HasForeignKey("MisAPI.Entities.Consultation", "RootCommentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
 
-                    b.HasOne("MisAPI.Entities.Speciality", "Speciality")
-                        .WithMany()
-                        .HasForeignKey("SpecialityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Navigation("Inspection");
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Navigation("RootComment");
+                    b.HasKey("Id");
 
-                    b.Navigation("Speciality");
+                    b.ToTable("DoctorModel");
                 });
 
             modelBuilder.Entity("MisAPI.Entities.Diagnosis", b =>
@@ -490,7 +471,7 @@ namespace MisAPI.Migrations
             modelBuilder.Entity("MisAPI.Entities.Doctor", b =>
                 {
                     b.HasOne("MisAPI.Entities.Speciality", "Speciality")
-                        .WithMany("Doctors")
+                        .WithMany()
                         .HasForeignKey("SpecialityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -501,7 +482,7 @@ namespace MisAPI.Migrations
             modelBuilder.Entity("MisAPI.Entities.Inspection", b =>
                 {
                     b.HasOne("MisAPI.Entities.Doctor", "Doctor")
-                        .WithMany("Inspections")
+                        .WithMany()
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -517,28 +498,42 @@ namespace MisAPI.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("MisAPI.Entities.RefreshToken", b =>
+            modelBuilder.Entity("MisAPI.Entities.InspectionComment", b =>
                 {
-                    b.HasOne("MisAPI.Entities.Doctor", "Doctor")
+                    b.HasOne("MisAPI.Models.Api.DoctorModel", "Author")
                         .WithMany()
-                        .HasForeignKey("DoctorId")
+                        .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Doctor");
+                    b.Navigation("Author");
                 });
 
-            modelBuilder.Entity("MisAPI.Entities.Comment", b =>
+            modelBuilder.Entity("MisAPI.Entities.InspectionConsultation", b =>
                 {
-                    b.Navigation("Children");
-
-                    b.Navigation("Consultation")
+                    b.HasOne("MisAPI.Entities.Inspection", "Inspection")
+                        .WithMany("Consultations")
+                        .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("MisAPI.Entities.Doctor", b =>
-                {
-                    b.Navigation("Inspections");
+                    b.HasOne("MisAPI.Entities.InspectionComment", "RootComment")
+                        .WithOne("Consultation")
+                        .HasForeignKey("MisAPI.Entities.InspectionConsultation", "RootCommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MisAPI.Entities.Speciality", "Speciality")
+                        .WithMany()
+                        .HasForeignKey("SpecialityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inspection");
+
+                    b.Navigation("RootComment");
+
+                    b.Navigation("Speciality");
                 });
 
             modelBuilder.Entity("MisAPI.Entities.Inspection", b =>
@@ -548,14 +543,15 @@ namespace MisAPI.Migrations
                     b.Navigation("Diagnoses");
                 });
 
+            modelBuilder.Entity("MisAPI.Entities.InspectionComment", b =>
+                {
+                    b.Navigation("Consultation")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MisAPI.Entities.Patient", b =>
                 {
                     b.Navigation("Inspections");
-                });
-
-            modelBuilder.Entity("MisAPI.Entities.Speciality", b =>
-                {
-                    b.Navigation("Doctors");
                 });
 #pragma warning restore 612, 618
         }

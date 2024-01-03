@@ -1,4 +1,4 @@
-﻿INSERT INTO "Specialties" (id, name, create_time)
+﻿INSERT INTO "Specialities" (id, name, create_time)
 VALUES ('e8f93a49-b93f-47f0-a912-08dbffad6d0e', 'Акушер-гинеколог', '2023-12-18 16:40:53.0123266'),
        ('302d5c0c-5623-4810-a913-08dbffad6d0e', 'Анестезиолог-реаниматолог', '2023-12-18 16:40:53.0123261'),
        ('2c4b19f5-511d-4f27-a914-08dbffad6d0e', 'Дерматовенеролог', '2023-12-18 16:40:53.0123256'),
