@@ -13,7 +13,7 @@ public class PatientCreateModel
     [StringLength(1000, MinimumLength = 1, ErrorMessage = EntityConstants.WrongSymbolInFullNameError)]
     public string Name { get; set; } = string.Empty;
     
-    [DateValidatorAttribute]
+    [DateValidator]
     public DateTime Birthday { get; set; }
     
     [JsonConverter(typeof(GenderConverter))]
