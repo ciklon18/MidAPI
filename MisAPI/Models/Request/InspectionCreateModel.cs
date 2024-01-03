@@ -6,7 +6,7 @@ namespace MisAPI.Models.Request;
 
 public class InspectionCreateModel
 {
-    [DateValidatorAttribute]
+    [DateValidator]
     public DateTime Date { get; set; }
     
     [StringLength(5000, MinimumLength = 1, ErrorMessage = "Anamnesis length must be between 1 and 5000.")]
@@ -20,15 +20,15 @@ public class InspectionCreateModel
     
     public Conclusion Conclusion { get; set; }
     
-    [DateValidatorAttribute]
+    [DateValidator]
     public DateTime NextVisitDate { get; set; }
     
-    [DateValidatorAttribute]
+    [DateValidator]
     public DateTime DeathDate { get; set; }
     
     public Guid PreviousInspectionId { get; set; }
     
-    // public IEnumerable<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
-    //
-    // public IEnumerable<ConsultationCreateModel> Consultations { get; set; } = null!;
+    public IEnumerable<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
+    
+    public IEnumerable<ConsultationCreateModel> Consultations { get; set; } = null!;
 }

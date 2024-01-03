@@ -13,6 +13,7 @@ public static class EntityConstants
 
     public const string FullNameRegex = @"^[a-zA-ZА-Яа-я\s]*$";
     public const string WrongSymbolInFullNameError = "Name can only contain letters and spaces.";
+    public const string WrongPatientNameError = "Patient name must be 2 and more characters.";
     public const string IncorrectEmailError = "Invalid email format. It must be user@example.com";
     public const string DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
     

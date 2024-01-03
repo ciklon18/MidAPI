@@ -51,7 +51,7 @@ public class ExceptionMiddleware
         catch (IncorrectGenderException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
-        } 
+        }
         catch (InvalidRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
@@ -69,7 +69,10 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        
+        catch (PatientNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (UnauthorizedException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
