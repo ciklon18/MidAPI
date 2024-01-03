@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MisAPI.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MisAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240103093609_update_connections_7")]
+    partial class add_comments_and_consultattions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,10 +265,12 @@ namespace MisAPI.Migrations
 
             modelBuilder.Entity("MisAPI.Entities.Mkb10", b =>
                 {
-                    b.Property<Guid?>("IdUuid")
+                    b.Property<int>("IdInt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id_uuid");
+                        .HasColumnType("integer")
+                        .HasColumnName("id_int");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdInt"));
 
                     b.Property<string>("AddlCode")
                         .HasColumnType("text")
@@ -279,13 +284,13 @@ namespace MisAPI.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
 
-                    b.Property<int>("IdInt")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_int");
-
                     b.Property<int>("IdParent")
                         .HasColumnType("integer")
                         .HasColumnName("parent_id");
+
+                    b.Property<Guid?>("IdUuid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id_uuid");
 
                     b.Property<string>("MkbCode")
                         .IsRequired()
@@ -310,7 +315,7 @@ namespace MisAPI.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("root_id_int");
 
-                    b.HasKey("IdUuid");
+                    b.HasKey("IdInt");
 
                     b.ToTable("Mkb10");
                 });

@@ -43,7 +43,7 @@ namespace MisAPI.Migrations
                 });
             
             migrationBuilder.CreateTable(
-                name: "Specialties",
+                name: "Specialities",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -52,7 +52,7 @@ namespace MisAPI.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Specialties", x => x.id);
+                    table.PrimaryKey("PK_Specialities", x => x.id);
                 });
         }
 
@@ -69,7 +69,7 @@ namespace MisAPI.Migrations
                 name: "Refresh tokens");
 
             migrationBuilder.DropTable(
-                name: "Specialties");
+                name: "Specialities");
         }
     }
 }

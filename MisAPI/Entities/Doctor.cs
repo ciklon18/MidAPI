@@ -16,7 +16,6 @@ public class Doctor
 
     [Column("name")]
     [StringLength(maximumLength: 200)]
-
     [RegularExpression(pattern: EntityConstants.FullNameRegex,
         ErrorMessage = EntityConstants.WrongSymbolInFullNameError)]
     public required string Name { get; set; }
@@ -49,8 +48,10 @@ public class Doctor
     [Column("create_time")]
     [JsonConverter(typeof(JsonDateTimeConverter))]
     public DateTime CreateTime { get; set; }
-    
-    [Required]
-    [Column("speciality_id")]
-    public Guid SpecialityId { get; set; }
+
+    [Required] [Column("speciality_id")] public Guid SpecialityId { get; set; }
+
+    public Speciality Speciality { get; set; } = null!;
+
+    public ICollection<Inspection> Inspections { get; set; } = new List<Inspection>();
 }

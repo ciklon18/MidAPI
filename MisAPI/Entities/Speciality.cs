@@ -5,17 +5,18 @@ using MisAPI.Converters;
 
 namespace MisAPI.Entities;
 
-[Table("Specialties")]
-public class Specialty
+[Table("Specialities")]
+public class Speciality
 {
-    public Specialty(string name)
+    public Speciality(string name)
     {
         Name = name;
     }
 
     [Key] [Column("id")] public Guid Id { get; init; }
 
-    [Column("name")] [Required]
+    [Column("name")]
+    [Required]
     [StringLength(maximumLength: 100)]
     public string Name { get; set; }
 
@@ -23,4 +24,6 @@ public class Specialty
     [Column("create_time")]
     [JsonConverter(typeof(JsonDateTimeConverter))]
     public DateTime CreateTime { get; set; }
+
+    public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();
 }
