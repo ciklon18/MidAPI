@@ -27,5 +27,7 @@ public static class ServiceConfiguration
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IIcd10DictionaryService, Icd10DictionaryService>();
+        services.AddScoped<IPatientService, PatientService>();
     }
 }
