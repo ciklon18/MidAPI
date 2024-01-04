@@ -47,18 +47,20 @@ public class PatientService : IPatientService
         int page, int size, Guid doctorId)
     {
         var lowerName = name?.ToLower() ?? string.Empty;
-        var patients = _db.Patients.AsQueryable().Where(patient => patient.Name.Contains(lowerName)).AsQueryable();
+        
+        var patients = _db.Patients
+            .Where(patient => patient.Name.Contains(lowerName));
 
-        if (conclusions is { Length: > 0 })
+        if (conclusions?.Length > 0)
         {
             patients = patients.Where(patient =>
-                patient.Inspections.Any(inspection => conclusions.Contains(inspection.Conclusion)));
+                    patient.Inspections.Any(inspection => conclusions.Contains(inspection.Conclusion)));
         }
 
         if (scheduledVisits)
         {
             patients = patients.Where(
-                patient => patient.Inspections.Any(inspection => inspection.NextVisitDate != null));
+                    patient => patient.Inspections.Any(inspection => inspection.NextVisitDate != null));
         }
 
         if (onlyMine)
@@ -78,13 +80,21 @@ public class PatientService : IPatientService
                 patient.Inspections.Max(inspection => inspection.Date)),
             _ => patients
         };
-        var patientModelList = patients.AsEnumerable()
-            .Select(Mapper.EntityPatientToPatientModel)
-            .Skip((page - 1) * size)
-            .Take(size);
-
         var totalCount = await patients.CountAsync();
-        var totalPages = totalCount / size + (totalCount % size == 0 ? 0 : 1);
+    
+        if (page > totalCount / size && totalCount > 0)
+        {
+            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
+        }
+
+        var totalPages = (int)Math.Ceiling((double)totalCount / size);
+        var patientModelList = patients
+            .Skip((page - 1) * size)
+            .Take(size)
+            .Include(patient => patient.Inspections)
+            .Select(Mapper.EntityPatientToPatientModel)
+            .ToList();
+
         return new PatientPagedListModel(
             patientModelList,
             new PageInfoModel(size, totalPages, page)
@@ -95,49 +105,136 @@ public class PatientService : IPatientService
     public async Task<Guid> CreateInspection(Guid id, InspectionCreateModel inspectionCreateModel, Guid doctorId)
     {
         var inspection = Mapper.InspectionCreateModelToInspection(inspectionCreateModel);
-        inspection.PatientId = id;
-        inspection.DoctorId = doctorId;
+        
+        
+        
+        if (inspection.Date > DateTime.Now)
+            throw new InvalidValueForAttributeDateException("Date of inspection cannot be in the future");
+        if (inspection.PreviousInspectionId != Guid.Empty)
+        {
+            var previousInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == inspection.PreviousInspectionId);
+            if (previousInspection == null)
+                throw new InspectionNotFoundException(
+                    $"Inspection with id = {inspection.PreviousInspectionId} not found");
+            if (previousInspection.Date > inspection.Date)
+                throw new InvalidValueForAttributeDateException("Date of inspection cannot be earlier than date of previous inspection");
+        }
+        switch (inspection.Conclusion)
+        {
+            case Conclusion.Disease when inspection.NextVisitDate == null:
+                throw new InvalidValueForAttributeDateException("Next visit date cannot be null if conclusion is disease");
+            case Conclusion.Death when inspection.DeathDate == null:
+                throw new InvalidValueForAttributeDateException("Death date cannot be null if conclusion is death");
+            case Conclusion.Recovery when inspection.DeathDate != null:
+                throw new InvalidValueForAttributeDateException("Death date must be null if conclusion is recovery");
+            case Conclusion.Recovery when inspection.NextVisitDate != null:
+                throw new InvalidValueForAttributeDateException("Next visit date must be null if conclusion is recovery");
+        }
+        if (inspectionCreateModel.Diagnoses == null || !inspectionCreateModel.Diagnoses.Any())
+            throw new InvalidValueForAttributeDiagnosesException("Diagnoses cannot be null or empty");
+        if (inspectionCreateModel.Diagnoses.Count(d => d.Type == DiagnosisType.Main) != 1)
+            throw new InvalidValueForAttributeDiagnosesException("Inspection must have one main diagnosis");
 
-        var diagnoses = new List<Diagnosis>();
-        foreach (var diagnosisCreateModel in inspectionCreateModel.Diagnoses)
+        
+        
+        
+        var diagnoses = await Task.WhenAll(inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
         {
             var diagnosisEntity = Mapper.DiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
             var diagnosisFromDb =
                 await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
+
             if (diagnosisFromDb == null)
                 throw new DiagnosisNotFoundException(
                     $"Diagnosis with id = {diagnosisCreateModel.IcdDiagnosisId} not found");
+
             diagnosisEntity.Code = diagnosisFromDb.Code;
             diagnosisEntity.Name = diagnosisFromDb.Name;
             diagnosisEntity.InspectionId = inspection.Id;
-            diagnoses.Add(diagnosisEntity);
-            await _db.Diagnoses.AddAsync(diagnosisEntity);
-        }
+
+            return diagnosisEntity;
+        }));
+        await _db.Diagnoses.AddRangeAsync(diagnoses);
+
 
         var baseInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty || id == Guid.Empty
             ? Guid.Empty
-            : await _db.Inspections.Where(i => i.PatientId == id).MaxAsync(i => i.Id);
+            : await _db.Inspections
+                .Where(i => i.PatientId == id)
+                .OrderByDescending(i => i.Id)
+                .Select(i => i.Id)
+                .FirstOrDefaultAsync();
+
 
         var baseInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == baseInspectionId);
         if (baseInspection == null)
             throw new InspectionNotFoundException($"Inspection with id = {baseInspectionId} not found");
+        
         inspection.BaseInspectionId = baseInspection.Id;
-
         inspection.Diagnoses = diagnoses;
+        inspection.PatientId = id;
+        inspection.DoctorId = doctorId;
+        
         await _db.Inspections.AddAsync(inspection);
         await _db.SaveChangesAsync();
+        
         return inspection.Id;
     }
 
-    public Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, IEnumerable<Guid>? icdRoots, int page,
-        int size, Guid doctorId)
+    public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, IEnumerable<Guid>? icdRoots,
+        int page, int size, Guid doctorId)
     {
-        // get list of patient inspections
-        // if grouped - 
-        // Параметр grouped в вашем запросе является флагом (boolean), который указывает, нужно ли группировать медицинские осмотры по цепочке взаимосвязанных осмотров.
-        //
-        //     Если grouped установлен в true, то осмотры будут отфильтрованы и группированы таким образом, чтобы отобразить связанные медицинские осмотры в цепочках. 
-        throw new NotImplementedException();
+        var enumerable = icdRoots != null ? icdRoots.ToList() : new List<Guid>();
+        await CheckAreIcdRootsExist(enumerable);
+        var inspections = _db.Inspections.AsQueryable().Where(i => i.PatientId == id);
+        
+        if (grouped)
+        {
+            inspections = inspections.Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
+        }
+
+        var inspectionsList = inspections
+            .Include(inspection => inspection.Diagnoses)
+            .AsEnumerable()
+            .Select(inspection =>
+            {
+                var diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main);
+                var diagnosisModel = diagnosis != null ? Mapper.DiagnosisToDiagnosisModel(diagnosis) : null;
+                return Mapper.EntityInspectionToInspectionPreviewModel(inspection, diagnosisModel);
+            });
+
+        if (icdRoots != null)
+        {
+            inspectionsList = inspectionsList.Where(i =>
+                i.Diagnosis != null && enumerable.Contains(i.Diagnosis.Id));
+        }
+
+        inspectionsList = inspectionsList.ToList();
+        var count = inspectionsList.Count();
+        if (page > count / size && !inspectionsList.Any())
+            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
+        
+        var totalPages = (int)Math.Ceiling((double)count / size);
+
+        inspectionsList = inspectionsList
+            .Skip((page - 1) * size)
+            .Take(size);
+        return new InspectionPagedListModel(inspectionsList, new PageInfoModel(size, totalPages, page));
+    }
+
+    
+    
+    
+    
+    private async Task CheckAreIcdRootsExist(IEnumerable<Guid>? icdRoots)
+    {
+        if (icdRoots == null) return;
+        var icdRootsList = _db.Mkb10Roots.AsQueryable();
+        foreach (var icdRoot in icdRoots)
+        {
+            if (!await icdRootsList.AnyAsync(i => i.Id == icdRoot))
+                throw new IcdRootNotFoundException($"Icd root with id = {icdRoot} not found");
+        }
     }
 
     public async Task<PatientModel> GetPatientCard(Guid id, Guid doctorId)
@@ -147,17 +244,18 @@ public class PatientService : IPatientService
         return Mapper.EntityPatientToPatientModel(patient);
     }
 
-    public async Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId)
+    public Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId)
     {
         var inspections = _db.Inspections.AsQueryable().Where(i => i.PatientId == id);
         var newInspections = inspections.Where(i =>
             i.BaseInspectionId == Guid.Empty ||
-            !inspections.Any(i2 => i2.BaseInspectionId == i.Id || i2.PreviousInspectionId == i.Id));
+            inspections.Any(i2 => i2.BaseInspectionId == i.Id || i2.PreviousInspectionId == i.Id));
         if (!string.IsNullOrEmpty(request))
         {
-            newInspections = newInspections.Where(i => i.Diagnoses != null && i.Diagnoses.Any(d => d.Name.Contains(request)));
+            newInspections =
+                newInspections.Where(i => i.Diagnoses != null && i.Diagnoses.Any(d => d.Name.Contains(request)));
         }
-        
-        return newInspections.AsEnumerable().Select(Mapper.EntityInspectionToInspectionShortModel);
+
+        return Task.FromResult(newInspections.AsEnumerable().Select(Mapper.EntityInspectionToInspectionShortModel));
     }
 }

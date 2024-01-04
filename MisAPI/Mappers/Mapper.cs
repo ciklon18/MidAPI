@@ -88,4 +88,17 @@ public static class Mapper
             Type = diagnosis.Type
         };
     }
+
+    public static InspectionPreviewModel EntityInspectionToInspectionPreviewModel(Inspection inspection, DiagnosisModel? diagnosisModel)
+    {
+        return new InspectionPreviewModel
+        {
+            CreateTime = inspection.CreateTime,
+            Date = inspection.Date,
+            Id = inspection.Id,
+            Diagnosis = diagnosisModel,
+            PatientId = inspection.PatientId,
+            DoctorId = inspection.DoctorId
+        };
+    }
 }

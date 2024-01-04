@@ -112,7 +112,6 @@ namespace MisAPI.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("code");
 
@@ -262,10 +261,10 @@ namespace MisAPI.Migrations
 
             modelBuilder.Entity("MisAPI.Entities.Mkb10", b =>
                 {
-                    b.Property<Guid?>("IdUuid")
+                    b.Property<Guid?>("IdGuid")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id_uuid");
+                        .HasColumnName("id_guid");
 
                     b.Property<string>("AddlCode")
                         .HasColumnType("text")
@@ -310,7 +309,7 @@ namespace MisAPI.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("root_id_int");
 
-                    b.HasKey("IdUuid");
+                    b.HasKey("IdGuid");
 
                     b.ToTable("Mkb10");
                 });

@@ -28,7 +28,7 @@ public class InspectionPreviewModel
 
     public string Patient { get; set; } = null!;
 
-    public DiagnosisModel Diagnosis { get; set; } = null!;
+    public DiagnosisModel? Diagnosis { get; set; } = null!;
 
     public bool HasChain { get; set; }
 
