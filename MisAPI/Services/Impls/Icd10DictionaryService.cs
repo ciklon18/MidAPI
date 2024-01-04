@@ -25,7 +25,7 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         var selectedSpecialties = specialties
             .Skip((page - 1) * size)
             .Take(size);
-        if (page > 1 && !await specialties.AnyAsync())
+        if (page > specialtiesCount / size && !await selectedSpecialties.AnyAsync())
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
         var selectedModelSpecialties = await selectedSpecialties
             .Select(s => new SpecialityModel(s.Id, s.Name, s.CreateTime))
@@ -50,11 +50,11 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         var selectedDiagnoses = diagnoses
             .Skip((page - 1) * size)
             .Take(size);
-        if (page > 1 && !await diagnoses.AnyAsync())
+        if (page > diagnosesCount / size && !await selectedDiagnoses.AnyAsync())
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
         var recordDiagnoses = selectedDiagnoses.Select(d =>
-            new Icd10RecordModel(d.IdUuid ?? new Guid(), d.CreateTime, d.MkbCode, d.MkbName));
+            new Icd10RecordModel(d.IdGuid ?? new Guid(), d.CreateTime, d.MkbCode, d.MkbName));
 
         
         var count = diagnosesCount / size;
@@ -74,11 +74,11 @@ public class Icd10DictionaryService : IIcd10DictionaryService
 
     public async Task<DiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId)
     {
-        var diagnosis = await _db.Mkb10.FirstOrDefaultAsync(d => d.IdUuid == icdDiagnosisId);
+        var diagnosis = await _db.Mkb10.FirstOrDefaultAsync(d => d.IdGuid == icdDiagnosisId);
         if (diagnosis == null) throw new DiagnosisNotFoundException($"Diagnosis with id = {icdDiagnosisId} not found");
         return new DiagnosisModel
         {
-            Id = diagnosis.IdUuid ?? new Guid(),
+            Id = diagnosis.IdGuid ?? new Guid(),
             CreateTime = diagnosis.CreateTime,
             Code = diagnosis.MkbCode,
             Name = diagnosis.MkbName

@@ -31,6 +31,10 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
+        catch (IcdRootNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (InvalidValueForAttributePageException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
@@ -51,7 +55,7 @@ public class ExceptionMiddleware
         catch (IncorrectGenderException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
-        } 
+        }
         catch (InvalidRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
@@ -61,6 +65,14 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
         }
+        catch (InvalidValueForAttributeDiagnosesException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidValueForAttributeDateException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (NullEmailException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
@@ -69,7 +81,10 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        
+        catch (PatientNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (UnauthorizedException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);

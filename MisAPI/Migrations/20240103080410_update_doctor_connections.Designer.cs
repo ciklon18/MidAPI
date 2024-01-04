@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MisAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240103080410_update_connections_2")]
-    partial class update_connections_2
+    [Migration("20240103080410_update_doctor_connections")]
+    partial class update_doctor_connections
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

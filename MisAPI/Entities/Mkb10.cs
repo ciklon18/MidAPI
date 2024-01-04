@@ -6,7 +6,7 @@ namespace MisAPI.Entities;
 [Table("Mkb10")]
 public class Mkb10
 {
-    [Key] [Column("id_uuid")] public Guid? IdUuid { get; set; } = Guid.NewGuid();
+    [Key] [Column("id_guid")] public Guid? IdGuid { get; set; } = Guid.NewGuid();
     [Column("id_int")] public int IdInt { get; set; }
     [Column("root_id_int")] public int? RootIdInt { get; set; }
     [Column("root_id_guid")] public Guid? RootIdGuid { get; set; }
