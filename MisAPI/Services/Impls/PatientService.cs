@@ -47,20 +47,20 @@ public class PatientService : IPatientService
         int page, int size, Guid doctorId)
     {
         var lowerName = name?.ToLower() ?? string.Empty;
-        
+
         var patients = _db.Patients
             .Where(patient => patient.Name.Contains(lowerName));
 
         if (conclusions?.Length > 0)
         {
             patients = patients.Where(patient =>
-                    patient.Inspections.Any(inspection => conclusions.Contains(inspection.Conclusion)));
+                patient.Inspections.Any(inspection => conclusions.Contains(inspection.Conclusion)));
         }
 
         if (scheduledVisits)
         {
             patients = patients.Where(
-                    patient => patient.Inspections.Any(inspection => inspection.NextVisitDate != null));
+                patient => patient.Inspections.Any(inspection => inspection.NextVisitDate != null));
         }
 
         if (onlyMine)
@@ -81,7 +81,7 @@ public class PatientService : IPatientService
             _ => patients
         };
         var totalCount = await patients.CountAsync();
-    
+
         if (page > totalCount / size && totalCount > 0)
         {
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
@@ -105,39 +105,42 @@ public class PatientService : IPatientService
     public async Task<Guid> CreateInspection(Guid id, InspectionCreateModel inspectionCreateModel, Guid doctorId)
     {
         var inspection = Mapper.InspectionCreateModelToInspection(inspectionCreateModel);
-        
-        
-        
+
+
         if (inspection.Date > DateTime.Now)
             throw new InvalidValueForAttributeDateException("Date of inspection cannot be in the future");
         if (inspection.PreviousInspectionId != Guid.Empty)
         {
-            var previousInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == inspection.PreviousInspectionId);
+            var previousInspection =
+                await _db.Inspections.FirstOrDefaultAsync(i => i.Id == inspection.PreviousInspectionId);
             if (previousInspection == null)
                 throw new InspectionNotFoundException(
                     $"Inspection with id = {inspection.PreviousInspectionId} not found");
             if (previousInspection.Date > inspection.Date)
-                throw new InvalidValueForAttributeDateException("Date of inspection cannot be earlier than date of previous inspection");
+                throw new InvalidValueForAttributeDateException(
+                    "Date of inspection cannot be earlier than date of previous inspection");
         }
+
         switch (inspection.Conclusion)
         {
             case Conclusion.Disease when inspection.NextVisitDate == null:
-                throw new InvalidValueForAttributeDateException("Next visit date cannot be null if conclusion is disease");
+                throw new InvalidValueForAttributeDateException(
+                    "Next visit date cannot be null if conclusion is disease");
             case Conclusion.Death when inspection.DeathDate == null:
                 throw new InvalidValueForAttributeDateException("Death date cannot be null if conclusion is death");
             case Conclusion.Recovery when inspection.DeathDate != null:
                 throw new InvalidValueForAttributeDateException("Death date must be null if conclusion is recovery");
             case Conclusion.Recovery when inspection.NextVisitDate != null:
-                throw new InvalidValueForAttributeDateException("Next visit date must be null if conclusion is recovery");
+                throw new InvalidValueForAttributeDateException(
+                    "Next visit date must be null if conclusion is recovery");
         }
+
         if (inspectionCreateModel.Diagnoses == null || !inspectionCreateModel.Diagnoses.Any())
             throw new InvalidValueForAttributeDiagnosesException("Diagnoses cannot be null or empty");
         if (inspectionCreateModel.Diagnoses.Count(d => d.Type == DiagnosisType.Main) != 1)
             throw new InvalidValueForAttributeDiagnosesException("Inspection must have one main diagnosis");
 
-        
-        
-        
+
         var diagnoses = await Task.WhenAll(inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
         {
             var diagnosisEntity = Mapper.DiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
@@ -169,15 +172,15 @@ public class PatientService : IPatientService
         var baseInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == baseInspectionId);
         if (baseInspection == null)
             throw new InspectionNotFoundException($"Inspection with id = {baseInspectionId} not found");
-        
+
         inspection.BaseInspectionId = baseInspection.Id;
         inspection.Diagnoses = diagnoses;
         inspection.PatientId = id;
         inspection.DoctorId = doctorId;
-        
+
         await _db.Inspections.AddAsync(inspection);
         await _db.SaveChangesAsync();
-        
+
         return inspection.Id;
     }
 
@@ -186,11 +189,15 @@ public class PatientService : IPatientService
     {
         var enumerable = icdRoots != null ? icdRoots.ToList() : new List<Guid>();
         await CheckAreIcdRootsExist(enumerable);
-        var inspections = _db.Inspections.AsQueryable().Where(i => i.PatientId == id);
-        
+
+        var inspections = _db.Inspections
+            .AsQueryable()
+            .Where(i => i.PatientId == id);
+
         if (grouped)
         {
-            inspections = inspections.Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
+            inspections =
+                inspections.Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
         }
 
         var inspectionsList = inspections
@@ -213,7 +220,7 @@ public class PatientService : IPatientService
         var count = inspectionsList.Count();
         if (page > count / size && !inspectionsList.Any())
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
-        
+
         var totalPages = (int)Math.Ceiling((double)count / size);
 
         inspectionsList = inspectionsList
@@ -222,10 +229,7 @@ public class PatientService : IPatientService
         return new InspectionPagedListModel(inspectionsList, new PageInfoModel(size, totalPages, page));
     }
 
-    
-    
-    
-    
+
     private async Task CheckAreIcdRootsExist(IEnumerable<Guid>? icdRoots)
     {
         if (icdRoots == null) return;
@@ -246,16 +250,27 @@ public class PatientService : IPatientService
 
     public Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId)
     {
-        var inspections = _db.Inspections.AsQueryable().Where(i => i.PatientId == id);
-        var newInspections = inspections.Where(i =>
-            i.BaseInspectionId == Guid.Empty ||
-            inspections.Any(i2 => i2.BaseInspectionId == i.Id || i2.PreviousInspectionId == i.Id));
+        var inspections = _db.Inspections
+            .AsQueryable()
+            .Where(i => i.PatientId == id);
+
+        var newInspections = inspections
+            .Where(i =>
+                i.BaseInspectionId == Guid.Empty ||
+                !inspections.Any(i2 => i2.BaseInspectionId == i.Id || i2.PreviousInspectionId == i.Id));
         if (!string.IsNullOrEmpty(request))
         {
-            newInspections =
-                newInspections.Where(i => i.Diagnoses != null && i.Diagnoses.Any(d => d.Name.Contains(request)));
+            var requestLower = request.ToLower();
+            newInspections = newInspections
+                .Where(i => 
+                    i.Diagnoses != null 
+                    && i.Diagnoses.Any(d => d.Name.ToLower().Contains(requestLower)));
         }
 
-        return Task.FromResult(newInspections.AsEnumerable().Select(Mapper.EntityInspectionToInspectionShortModel));
+        return Task.FromResult(
+            newInspections
+                .AsEnumerable()
+                .Select(Mapper.EntityInspectionToInspectionShortModel)
+            );
     }
 }
