@@ -5,24 +5,24 @@ namespace MisAPI.Services.Impls;
 
 public class TokenCleanupService : ITokenCleanupService, IHostedService, IAsyncDisposable
 {
-    private readonly ApplicationDbContext _applicationDb;
+    private readonly ApplicationDbContext _db;
 
     private Timer _timer = null!;
 
     
     public TokenCleanupService(IServiceProvider serviceProvider)
     {
-        _applicationDb = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        _db = serviceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
     }
     
     
     public void RemoveExpiredRefreshTokensAsync(object? state)
     {
-        // var expiredTokens = _db.RefreshTokens.AsEnumerable().Where(t => t.IsExpired).ToList();
-        //
-        // if (!expiredTokens.Any()) return;
-        // _db.RefreshTokens.RemoveRange(expiredTokens);
-        // _db.SaveChanges();
+        var expiredTokens = _db.RefreshTokens.AsEnumerable().Where(t => t.IsExpired).ToList();
+        
+        if (!expiredTokens.Any()) return;
+        _db.RefreshTokens.RemoveRange(expiredTokens);
+        _db.SaveChanges();
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -40,6 +40,6 @@ public class TokenCleanupService : ITokenCleanupService, IHostedService, IAsyncD
     public async ValueTask DisposeAsync()
     {
         await _timer.DisposeAsync();
-        await _applicationDb.DisposeAsync();
+        await _db.DisposeAsync();
     }
 }

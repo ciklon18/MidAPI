@@ -1,8 +1,10 @@
-﻿namespace MisAPI.Models.Response;
+using MisAPI.Models.Api;
 
-public record InspectionPagedListModel(
-    // IEnumerable<InspectionPreviewModel> Inspections, PageInfoModel Pagination
-    )
+namespace MisAPI.Models.Response;
+
+public record InspectionPagedListModel(IEnumerable<InspectionPreviewModel> Inspections, PageInfoModel Pagination)
 {
-    
+    public InspectionPagedListModel() : this(Enumerable.Empty<InspectionPreviewModel>(), new PageInfoModel())
+    {
+    }
 }
