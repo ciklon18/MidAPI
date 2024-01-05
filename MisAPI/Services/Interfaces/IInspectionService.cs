@@ -9,5 +9,5 @@ public interface IInspectionService
 {
     Task<InspectionModel> GetInspection(Guid id, Guid doctorId);
     Task<IActionResult> PutInspection(Guid id, InspectionEditModel inspection, Guid doctorId);
-    Task<InspectionPreviewModel> GetInspectionChain(Guid id, Guid doctorId);
+    Task<IEnumerable<InspectionPreviewModel>> GetInspectionChain(Guid id, Guid doctorId);
 }

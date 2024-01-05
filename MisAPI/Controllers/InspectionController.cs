@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MisAPI.Models.Api;
 using MisAPI.Models.Request;
-using MisAPI.Models.Response;
 using MisAPI.Services.Interfaces;
 
 namespace MisAPI.Controllers;
@@ -31,7 +30,7 @@ public class InspectionController : AuthorizeController
     }
     
     [HttpGet("{id:guid}/chain")]
-    public async Task<InspectionPreviewModel> GetInspectionChain([FromRoute] Guid id)
+    public async Task<IEnumerable<InspectionPreviewModel>> GetInspectionChain([FromRoute] Guid id)
     {
         return await _inspectionService.GetInspectionChain(id, DoctorId);
     }

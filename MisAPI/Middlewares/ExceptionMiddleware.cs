@@ -60,7 +60,14 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-
+        catch (InspectionIsNotRootException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InspectionNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status404NotFound);
+        }
         catch (InvalidTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
@@ -72,6 +79,11 @@ public class ExceptionMiddleware
         catch (InvalidValueForAttributeDateException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (NotHavePermissionException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status403Forbidden);
+
         }
         catch (NullEmailException ex)
         {
