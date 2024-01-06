@@ -30,5 +30,6 @@ public static class ServiceConfiguration
         services.AddScoped<IIcd10DictionaryService, Icd10DictionaryService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IInspectionService, InspectionService>();
+        services.AddScoped<IConsultationService, ConsultationService>();
     }
 }
