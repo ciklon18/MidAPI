@@ -12,14 +12,15 @@ public class ApplicationDbContext : DbContext
     
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<Doctor> Doctors { get; set; } = null!;
-    public DbSet<Speciality> Specialties { get; set; } = null!;
-    public DbSet<Mkb10> Mkb10 { get; set; } = null!;
-    public DbSet<Mkb10Root> Mkb10Roots { get; set; } = null!;
+    public DbSet<Speciality> Specialities { get; set; } = null!;
+    public DbSet<Icd10> Icd10 { get; set; } = null!;
+    public DbSet<Icd10Root> Icd10Roots { get; set; } = null!;
 
     public DbSet<Patient> Patients { get; set; } = null!;
     public DbSet<Inspection> Inspections { get; set; } = null!;
     public DbSet<Diagnosis> Diagnoses { get; set; } = null!;
     public DbSet<Comment> Comments { get; set; } = null!;
+    public DbSet<Consultation> Consultations { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

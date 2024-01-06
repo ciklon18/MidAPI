@@ -1,6 +1,7 @@
 ﻿using MisAPI.Entities;
 using MisAPI.Enums;
 using MisAPI.Models.Request;
+using MisAPI.Models.Response;
 using MisAPI.Validator;
 
 namespace MisAPI.Models.Api;
@@ -38,5 +39,5 @@ public class InspectionModel
 
     public IEnumerable<DiagnosisModel> Diagnoses { get; set; } = new List<DiagnosisModel>();
     
-    public IEnumerable<ConsultationModel> Consultations { get; set; } = new List<ConsultationModel>();
+    public IEnumerable<InspectionConsultationModel> Consultations { get; set; } = new List<InspectionConsultationModel>();
 }

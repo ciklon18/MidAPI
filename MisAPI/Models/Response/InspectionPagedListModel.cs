@@ -1,4 +1,4 @@
-﻿using MisAPI.Models.Api;
+using MisAPI.Models.Api;
 
 namespace MisAPI.Models.Response;
 
