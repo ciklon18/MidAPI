@@ -26,7 +26,7 @@ public class DoctorService : IDoctorService
     {
         await CheckIsRefreshTokenValid(doctorId);
         var doctor = await GetDoctorByGuidAsync(doctorId);
-        return Mapper.EntityDoctorToDoctorDto(doctor);
+        return Mapper.MapEntityDoctorToDoctorDto(doctor);
     }
 
 
