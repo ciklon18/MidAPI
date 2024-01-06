@@ -15,20 +15,25 @@ public class PatientService : IPatientService
 {
     private readonly ApplicationDbContext _db;
     private readonly IIcd10DictionaryService _icd10DictionaryService;
+    private readonly IJwtService _jwtService;
 
-    public PatientService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService)
+    public PatientService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
+        IJwtService jwtService)
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
+        _jwtService = jwtService;
     }
+
 
     public async Task<Guid> CreatePatient(PatientCreateModel patientCreateModel, Guid doctorId)
     {
+        await _jwtService.CheckIsRefreshTokenValidAsync(doctorId);
         var patientId = Guid.NewGuid();
         var patient = new Patient
         {
-            Birthday = patientCreateModel.Birthday,
-            CreateTime = DateTime.Now,
+            Birthday = patientCreateModel.Birthday.ToUniversalTime(),
+            CreateTime = DateTime.UtcNow,
             Gender = patientCreateModel.Gender,
             Id = patientId,
             Name = patientCreateModel.Name,
@@ -101,6 +106,8 @@ public class PatientService : IPatientService
 
     public async Task<Guid> CreateInspection(Guid id, InspectionCreateModel inspectionCreateModel, Guid doctorId)
     {
+        var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == id);
+        if (patient == null) throw new PatientNotFoundException($"Patient with id = {id} not found");
         var inspection = Mapper.MapInspectionCreateModelToInspection(inspectionCreateModel);
 
 
@@ -134,15 +141,14 @@ public class PatientService : IPatientService
 
         if (inspectionCreateModel.Diagnoses == null || !inspectionCreateModel.Diagnoses.Any())
             throw new InvalidValueForAttributeDiagnosesException("Diagnoses cannot be null or empty");
-        if (inspectionCreateModel.Diagnoses.Count(d => d.Type == DiagnosisType.Main) != 1)
-            throw new InvalidValueForAttributeDiagnosesException("Inspection must have one main diagnosis");
+        if (inspectionCreateModel.Diagnoses.All(d => d.Type != DiagnosisType.Main))
+            throw new InvalidValueForAttributeDiagnosesException("Inspection must have at least one main diagnosis");
 
 
-        var diagnoses = await Task.WhenAll(inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
+        var tasks = inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
         {
             var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
-            var diagnosisFromDb =
-                await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
+            var diagnosisFromDb = await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
 
             if (diagnosisFromDb == null)
                 throw new DiagnosisNotFoundException(
@@ -153,8 +159,7 @@ public class PatientService : IPatientService
             diagnosisEntity.InspectionId = inspection.Id;
 
             return diagnosisEntity;
-        }));
-        await _db.Diagnoses.AddRangeAsync(diagnoses);
+        });
 
 
         var baseInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty || id == Guid.Empty
@@ -165,17 +170,44 @@ public class PatientService : IPatientService
                 .Select(i => i.Id)
                 .FirstOrDefaultAsync();
 
+        if (baseInspectionId != Guid.Empty)
+        {
+            var baseInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == baseInspectionId);
+            if (baseInspection == null)
+                throw new InspectionNotFoundException($"Inspection with id = {baseInspectionId} not found");
+            if (baseInspection.Date > inspection.Date)
+                throw new InvalidValueForAttributeDateException(
+                    "Date of inspection cannot be earlier than date of base inspection");
+            
+            inspection.BaseInspectionId = baseInspection.Id;
+        }
 
-        var baseInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == baseInspectionId);
-        if (baseInspection == null)
-            throw new InspectionNotFoundException($"Inspection with id = {baseInspectionId} not found");
-
-        inspection.BaseInspectionId = baseInspection.Id;
-        inspection.Diagnoses = diagnoses;
-        inspection.PatientId = id;
+        inspection.PatientId = patient.Id;
         inspection.DoctorId = doctorId;
+        inspection.CreateTime = DateTime.UtcNow;
+        inspection.Date = inspection.Date.ToUniversalTime();
+        if (inspection.NextVisitDate != null)
+        {
+            inspection.NextVisitDate = inspection.NextVisitDate?.ToUniversalTime();
 
-        await _db.Inspections.AddAsync(inspection);
+        }
+
+        if (inspection.DeathDate != null)
+        {
+            inspection.DeathDate = inspection.DeathDate?.ToUniversalTime();
+        }
+        
+        inspection.PreviousInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty
+            ? null
+            : inspectionCreateModel.PreviousInspectionId;
+        var diagnosisEntities = await Task.WhenAll(tasks);
+
+        inspection.Diagnoses = diagnosisEntities;
+         await _db.Inspections.AddAsync(inspection);
+
+        await _db.Diagnoses.AddRangeAsync(diagnosisEntities);
+
+        
         await _db.SaveChangesAsync();
 
         return inspection.Id;

@@ -10,4 +10,5 @@ public interface IJwtService
     public Guid GetGuidFromRefreshToken(string? token);
     public Task<string?> GetRefreshTokenByGuidAsync(Guid doctorId);
     public Task<Guid> GetDoctorGuidAsync();
+    public Task CheckIsRefreshTokenValidAsync(Guid doctorId);
 }

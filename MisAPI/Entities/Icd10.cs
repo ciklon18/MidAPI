@@ -38,7 +38,7 @@ public class Icd10
 
     [Column("addl_code")]
     [StringLength(5000, MinimumLength = 1, ErrorMessage = "Addl code must be more 0 and less 5000 characters.")]
-    public string AddlCode { get; init; }
+    public string? AddlCode { get; init; }
     [Column("date")] public DateTime? Date { get; init; }
     [Column("parent_id")] public int IdParent { get; init; }
     [Column("create_time")] public DateTime CreateTime { get; init; } = DateTime.UtcNow;

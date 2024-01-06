@@ -45,7 +45,7 @@ namespace MisAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<Guid?>("InspectionId")
+                    b.Property<Guid?>("Inspection_id")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
@@ -59,7 +59,7 @@ namespace MisAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InspectionId");
+                    b.HasIndex("Inspection_id");
 
                     b.ToTable("Diagnoses");
                 });

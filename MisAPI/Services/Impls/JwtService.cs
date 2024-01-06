@@ -16,16 +16,17 @@ public class JwtService : IJwtService
     private readonly Tokens _tokens;
     private readonly ApplicationDbContext _db;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    
-    public JwtService(JwtSecurityTokenHandler tokenHandler, Tokens tokens, ApplicationDbContext db, IHttpContextAccessor httpContextAccessor)
+
+    public JwtService(JwtSecurityTokenHandler tokenHandler, Tokens tokens, ApplicationDbContext db,
+        IHttpContextAccessor httpContextAccessor)
     {
         _tokenHandler = tokenHandler;
         _tokens = tokens;
         _db = db;
         _httpContextAccessor = httpContextAccessor;
     }
-    
-    
+
+
     public string GenerateAccessToken(Guid doctorId)
     {
         return GenerateToken(doctorId: doctorId, key: _tokens.AccessTokenKey,
@@ -37,8 +38,8 @@ public class JwtService : IJwtService
         return GenerateToken(doctorId: doctorId, key: _tokens.RefreshTokenKey,
             expirationTime: _tokens.RefreshTokenExpiration.TotalMinutes);
     }
-    
-    
+
+
     public async Task SaveRefreshTokenAsync(string refreshToken, Guid doctorId)
     {
         var expiration = DateTime.UtcNow.AddMinutes(_tokens.RefreshTokenExpiration.TotalMinutes);
@@ -59,7 +60,7 @@ public class JwtService : IJwtService
         _db.RefreshTokens.Update(token);
         return _db.SaveChangesAsync();
     }
-    
+
     public async Task ValidateRefreshTokenAsync(string? token)
     {
         var refreshToken = await _db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token);
@@ -72,29 +73,30 @@ public class JwtService : IJwtService
         var stringDoctorId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
         var doctorGuid = Guid.Parse(stringDoctorId ?? string.Empty);
         if (doctorGuid == Guid.Empty) throw new DoctorNotFoundException("doctor not found");
-        await CheckIsRefreshTokenValid(doctorGuid);
+        await CheckIsRefreshTokenValidAsync(doctorGuid);
         var doctor = await _db.Doctors.FirstOrDefaultAsync(doctor => doctor.Id == doctorGuid);
         if (doctor == null) throw new DoctorNotFoundException("doctor not found");
         return doctor.Id;
     }
-    
+
 
     public Guid GetGuidFromRefreshToken(string? token)
     {
         var refreshToken = _db.RefreshTokens.FirstOrDefault(t => t.Token == token);
         if (refreshToken == null) throw new NullTokenException("Refresh token is null");
-        
+
         return refreshToken.DoctorId;
     }
 
 
     public async Task<string?> GetRefreshTokenByGuidAsync(Guid doctorId)
     {
-        var refreshToken = await _db.RefreshTokens.FirstOrDefaultAsync(t => t.DoctorId == doctorId);
+        var refreshToken =
+            await _db.RefreshTokens.FirstOrDefaultAsync(t => t.DoctorId == doctorId && !t.Revoked && t.Expires > DateTime.UtcNow);
         return refreshToken?.Token;
     }
-    
-    private async Task CheckIsRefreshTokenValid(Guid doctorId)
+
+    public async Task CheckIsRefreshTokenValidAsync(Guid doctorId)
     {
         var isGuidUsed = await _db.RefreshTokens.AnyAsync(token => token.DoctorId == doctorId);
         if (!isGuidUsed) throw new UnauthorizedException("Refresh token is not valid");
@@ -116,8 +118,8 @@ public class JwtService : IJwtService
         var token = _tokenHandler.CreateToken(tokenDescriptor);
         return _tokenHandler.WriteToken(token);
     }
-    
-    
+
+
     private static void CheckTokenNotRevokedAndNotExpired(RefreshToken? refreshToken)
     {
         switch (refreshToken)
@@ -129,5 +131,4 @@ public class JwtService : IJwtService
                     $"Refresh token is expired. Expiration date: {refreshToken.Expires}");
         }
     }
-
 }
