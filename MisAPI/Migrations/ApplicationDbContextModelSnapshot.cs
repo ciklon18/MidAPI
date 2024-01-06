@@ -123,6 +123,10 @@ namespace MisAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<Guid>("IcdDiagnosisId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("icd_diagnosis_id");
+
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")
                         .HasColumnName("inspection_id");
@@ -195,6 +199,93 @@ namespace MisAPI.Migrations
                     b.ToTable("Doctors");
                 });
 
+            modelBuilder.Entity("MisAPI.Entities.Icd10", b =>
+                {
+                    b.Property<Guid?>("IdGuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id_guid");
+
+                    b.Property<string>("AddlCode")
+                        .HasColumnType("text")
+                        .HasColumnName("addl_code");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("create_time");
+
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date");
+
+                    b.Property<string>("IcdCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("icd_code");
+
+                    b.Property<string>("IcdName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("icd_name");
+
+                    b.Property<int>("IdInt")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_int");
+
+                    b.Property<int>("IdParent")
+                        .HasColumnType("integer")
+                        .HasColumnName("parent_id");
+
+                    b.Property<string>("RecCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("rec_code");
+
+                    b.Property<Guid?>("RootIdGuid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_id_guid");
+
+                    b.Property<int?>("RootIdInt")
+                        .HasColumnType("integer")
+                        .HasColumnName("root_id_int");
+
+                    b.HasKey("IdGuid");
+
+                    b.ToTable("Icd10");
+                });
+
+            modelBuilder.Entity("MisAPI.Entities.Icd10Root", b =>
+                {
+                    b.Property<int>("KeyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("key_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("KeyId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("create_time");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("KeyId");
+
+                    b.ToTable("Icd10Roots");
+                });
+
             modelBuilder.Entity("MisAPI.Entities.Inspection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -257,93 +348,6 @@ namespace MisAPI.Migrations
                     b.HasIndex("PatientId");
 
                     b.ToTable("Inspections");
-                });
-
-            modelBuilder.Entity("MisAPI.Entities.Mkb10", b =>
-                {
-                    b.Property<Guid?>("IdGuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id_guid");
-
-                    b.Property<string>("AddlCode")
-                        .HasColumnType("text")
-                        .HasColumnName("addl_code");
-
-                    b.Property<DateTime>("CreateTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("create_time");
-
-                    b.Property<DateTime?>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
-                    b.Property<int>("IdInt")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_int");
-
-                    b.Property<int>("IdParent")
-                        .HasColumnType("integer")
-                        .HasColumnName("parent_id");
-
-                    b.Property<string>("MkbCode")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("mkb_code");
-
-                    b.Property<string>("MkbName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("mkb_name");
-
-                    b.Property<string>("RecCode")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("rec_code");
-
-                    b.Property<Guid?>("RootIdGuid")
-                        .HasColumnType("uuid")
-                        .HasColumnName("root_id_guid");
-
-                    b.Property<int?>("RootIdInt")
-                        .HasColumnType("integer")
-                        .HasColumnName("root_id_int");
-
-                    b.HasKey("IdGuid");
-
-                    b.ToTable("Mkb10");
-                });
-
-            modelBuilder.Entity("MisAPI.Entities.Mkb10Root", b =>
-                {
-                    b.Property<int>("KeyId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("key_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("KeyId"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("code");
-
-                    b.Property<DateTime>("CreateTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("create_time");
-
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("KeyId");
-
-                    b.ToTable("Mkb10Roots");
                 });
 
             modelBuilder.Entity("MisAPI.Entities.Patient", b =>

@@ -3,12 +3,13 @@ using MisAPI.Enums;
 using MisAPI.Models.Api;
 using MisAPI.Models.Request;
 using MisAPI.Models.Response;
+using ConsultationModel = MisAPI.Models.Api.ConsultationModel;
 
 namespace MisAPI.Mappers;
 
 public static class Mapper
 {
-    public static DoctorModel EntityDoctorToDoctorDto(Doctor doctor)
+    public static DoctorModel MapEntityDoctorToDoctorDto(Doctor doctor)
     {
         return new DoctorModel
         {
@@ -22,7 +23,7 @@ public static class Mapper
         };
     }
 
-    public static PatientModel EntityPatientToPatientModel(Patient patient)
+    public static PatientModel MapEntityPatientToPatientModel(Patient patient)
     {
         return new PatientModel
         {
@@ -34,7 +35,7 @@ public static class Mapper
         };
     }
 
-    public static Inspection InspectionCreateModelToInspection(InspectionCreateModel inspectionCreateModel)
+    public static Inspection MapInspectionCreateModelToInspection(InspectionCreateModel inspectionCreateModel)
     {
         return new Inspection
         {
@@ -52,7 +53,7 @@ public static class Mapper
         };
     }
 
-    public static Diagnosis DiagnosisCreateModelToDiagnosis(DiagnosisCreateModel diagnosisCreateModel)
+    public static Diagnosis MapDiagnosisCreateModelToDiagnosis(DiagnosisCreateModel diagnosisCreateModel)
     {
         return new Diagnosis
         {
@@ -60,23 +61,24 @@ public static class Mapper
             CreateTime = DateTime.UtcNow,
             Description = diagnosisCreateModel.Description,
             Type = diagnosisCreateModel.Type,
+            IcdDiagnosisId = diagnosisCreateModel.IcdDiagnosisId
         };
     }
 
-    public static InspectionShortModel EntityInspectionToInspectionShortModel(Inspection inspection)
+    public static InspectionShortModel MapEntityInspectionToInspectionShortModel(Inspection inspection)
     {
         var diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main);
-        var diagnosisModel = diagnosis != null ? DiagnosisToDiagnosisModel(diagnosis) : null;
+        var diagnosisModel = diagnosis != null ? MapDiagnosisToDiagnosisModel(diagnosis) : null;
         return new InspectionShortModel
         {
             CreateTime = inspection.CreateTime,
             Date = inspection.Date,
             Id = inspection.Id,
-            Diagnosis = diagnosisModel 
+            Diagnosis = diagnosisModel
         };
     }
 
-    public static DiagnosisModel DiagnosisToDiagnosisModel(Diagnosis diagnosis)
+    public static DiagnosisModel MapDiagnosisToDiagnosisModel(Diagnosis diagnosis)
     {
         return new DiagnosisModel
         {
@@ -89,7 +91,8 @@ public static class Mapper
         };
     }
 
-    public static InspectionPreviewModel EntityInspectionToInspectionPreviewModel(Inspection inspection, DiagnosisModel? diagnosisModel)
+    public static InspectionPreviewModel MapEntityInspectionToInspectionPreviewModel(Inspection inspection,
+        DiagnosisModel? diagnosisModel)
     {
         return new InspectionPreviewModel
         {
@@ -102,7 +105,7 @@ public static class Mapper
         };
     }
 
-    public static DoctorModel DoctorToDoctorModel(Doctor doctor)
+    private static DoctorModel MapDoctorToDoctorModel(Doctor doctor)
     {
         return new DoctorModel
         {
@@ -116,7 +119,7 @@ public static class Mapper
         };
     }
 
-    public static PatientModel PatientToPatientModel(Patient patient)
+    private static PatientModel MapPatientToPatientModel(Patient patient)
     {
         return new PatientModel
         {
@@ -128,8 +131,8 @@ public static class Mapper
         };
     }
 
-    
-    public static ConsultationModel ConsultationToConsultationModel(Consultation consultation)
+
+    private static ConsultationModel MapConsultationToConsultationModel(Consultation consultation)
     {
         return new ConsultationModel
         {
@@ -141,13 +144,13 @@ public static class Mapper
                 Id = consultation.SpecialityId,
                 Name = consultation.Speciality.Name
             },
-            RootComment = CommentToCommentModel(consultation.RootComment),
-            CommentsNumber = 0 // TODO: fix
-
+            Comments = consultation.RootComment.Children != null
+                ? consultation.RootComment.Children.Select(MapCommentToCommentModel).ToList()
+                : new List<CommentModel>()
         };
     }
 
-    private static CommentModel CommentToCommentModel(Comment consultationRootComment)
+    private static CommentModel MapCommentToCommentModel(Comment consultationRootComment)
     {
         return new CommentModel
         {
@@ -155,12 +158,12 @@ public static class Mapper
             CreateTime = consultationRootComment.CreateTime,
             ParentId = consultationRootComment.ParentId,
             Content = consultationRootComment.Content,
-            Author = DoctorToDoctorModel(consultationRootComment.Author),
+            Author = MapDoctorToDoctorModel(consultationRootComment.Author),
             ModifyTime = consultationRootComment.ModifyTime
         };
     }
 
-    public static InspectionModel EntityInspectionToInspectionModel(Inspection inspection)
+    public static InspectionModel MapEntityInspectionToInspectionModel(Inspection inspection)
     {
         return new InspectionModel
         {
@@ -173,17 +176,48 @@ public static class Mapper
             Conclusion = inspection.Conclusion,
             NextVisitDate = inspection.NextVisitDate,
             DeathDate = inspection.DeathDate,
-            Doctor = DoctorToDoctorModel(inspection.Doctor),
+            Doctor = MapDoctorToDoctorModel(inspection.Doctor),
             BaseInspectionId = inspection.BaseInspectionId,
             PreviousInspectionId = inspection.PreviousInspectionId,
-            Patient = PatientToPatientModel(inspection.Patient),
+            Patient = MapPatientToPatientModel(inspection.Patient),
             Diagnoses = inspection.Diagnoses != null
-                ? inspection.Diagnoses.Select(DiagnosisToDiagnosisModel)
+                ? inspection.Diagnoses.Select(MapDiagnosisToDiagnosisModel)
                 : new List<DiagnosisModel>(),
             Consultations = inspection.Consultations != null
-                ? inspection.Consultations.Select(ConsultationToConsultationModel)
-                : new List<ConsultationModel>()
+                ? inspection.Consultations.Select(MapConsultationToInspectionConsultationModel)
+                : new List<InspectionConsultationModel>()
         };
+    }
+
+    private static InspectionConsultationModel MapConsultationToInspectionConsultationModel(Consultation consultation)
+    {
+        return new InspectionConsultationModel
+        {
+            Id = consultation.Id,
+            CreateTime = consultation.CreateTime,
+            Speciality = new SpecialityModel
+            {
+                Id = consultation.SpecialityId,
+                Name = consultation.Speciality.Name
+            },
+            InspectionId = consultation.InspectionId,
+            CommentsNumber = consultation.CommentsNumber,
+            RootComment = MapCommentToInspectionCommentModel(consultation.RootComment)
+        };
+    }
+
+    private static InspectionCommentModel MapCommentToInspectionCommentModel(Comment consultationRootComment)
+    {
+        return new InspectionCommentModel
+        {
+            Id = consultationRootComment.Id,
+            CreateTime = consultationRootComment.CreateTime,
+            ParentId = consultationRootComment.ParentId,
+            Content = consultationRootComment.Content,
+            Author = MapDoctorToDoctorModel(consultationRootComment.Author),
+            ModifyTime = consultationRootComment.ModifyTime
+        };
+        
     }
 
     public static Inspection GetUpdatedInspectionEntity(Inspection inspectionEntity, InspectionEditModel inspection)
@@ -195,9 +229,67 @@ public static class Mapper
         inspectionEntity.NextVisitDate = inspection.NextVisitDate;
         inspectionEntity.DeathDate = inspection.DeathDate;
         inspectionEntity.Diagnoses = inspection.Diagnoses
-            .Select(DiagnosisCreateModelToDiagnosis)
+            .Select(MapDiagnosisCreateModelToDiagnosis)
             .ToList();
-        
+
         return inspectionEntity;
+    }
+
+    public static InspectionPreviewModel InspectionToInspectionPreviewModel(Inspection inspection)
+    {
+        return new InspectionPreviewModel
+        {
+            Id = inspection.Id,
+            CreateTime = inspection.CreateTime,
+            Date = inspection.Date,
+            PatientId = inspection.PatientId,
+            DoctorId = inspection.DoctorId,
+            Diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main) != null
+                ? MapDiagnosisToDiagnosisModel(inspection.Diagnoses.First(d => d.Type == DiagnosisType.Main))
+                : null,
+            Conclusion = inspection.Conclusion,
+            Doctor = inspection.Doctor.Name,
+            Patient = inspection.Patient.Name,
+            HasChain = inspection.PreviousInspectionId != null && inspection.PreviousInspectionId != Guid.Empty,
+            HasNested = inspection.BaseInspectionId != null && inspection.BaseInspectionId != Guid.Empty,
+            PreviousId = inspection.PreviousInspectionId ?? Guid.Empty
+        };
+    }
+
+    public static ConsultationModel ConsultationToConsultationModel(Consultation consultation,
+        Speciality consultationSpeciality, IEnumerable<Comment> comments)
+    {
+        return new ConsultationModel
+        {
+            Id = consultation.Id,
+            CreateTime = consultation.CreateTime,
+            InspectionId = consultation.InspectionId,
+            Speciality = MapSpecialityToSpecialityModel(consultationSpeciality),
+            Comments = comments.Select(MapCommentToCommentModel).ToList(),
+        };
+    }
+
+    private static SpecialityModel MapSpecialityToSpecialityModel(Speciality consultationSpeciality)
+    {
+        return new SpecialityModel
+        {
+            Id = consultationSpeciality.Id,
+            Name = consultationSpeciality.Name,
+            CreateTime = consultationSpeciality.CreateTime
+        };
+    }
+
+    public static Comment MapCommentCreateToComment(CommentCreateModel commentCreateModel, Guid doctorId,
+        Guid consultationId)
+    {
+        return new Comment
+        {
+            Id = Guid.NewGuid(),
+            CreateTime = DateTime.UtcNow,
+            AuthorId = doctorId,
+            ConsultationId = consultationId,
+            Content = commentCreateModel.Content,
+            ParentId = commentCreateModel.ParentId
+        };
     }
 }

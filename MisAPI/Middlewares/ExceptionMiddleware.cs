@@ -68,6 +68,11 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
         }
+        catch (IncorrectSpecialityException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+
+        }
         catch (InvalidTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
@@ -101,12 +106,28 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
         }
+        catch (ConsultationNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (SpecialityNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
 
-
+        }
+        catch (ForbiddenLeaveCommentException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status403Forbidden);
+        }
+        catch (CommentNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (Exception ex)
         {
             HandleException(context, ex, StatusCodes.Status500InternalServerError);
         }
+
     }
     
     private static void HandleException(HttpContext context, Exception exception, int statusCode)
