@@ -29,10 +29,10 @@ public class InspectionService : IInspectionService
             .FirstOrDefaultAsync(i => i.Id == id);
         if (inspection == null) throw new InspectionNotFoundException("Inspection not found.");
 
-        return Mapper.EntityInspectionToInspectionModel(inspection);
+        return Mapper.MapEntityInspectionToInspectionModel(inspection);
     }
 
-    public async Task<IActionResult> PutInspection(Guid id, InspectionEditModel inspection, Guid doctorId)
+    public async Task<IActionResult> EditInspection(Guid id, InspectionEditModel inspection, Guid doctorId)
     {
         var inspectionEntity = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == id);
         
@@ -74,9 +74,9 @@ public class InspectionService : IInspectionService
         {
             var diagnosis = currentInspection.Diagnoses?
                 .FirstOrDefault(d => d.Type == DiagnosisType.Main);
-            var diagnosisModel = diagnosis != null ? Mapper.DiagnosisToDiagnosisModel(diagnosis) : null;
+            var diagnosisModel = diagnosis != null ? Mapper.MapDiagnosisToDiagnosisModel(diagnosis) : null;
 
-            inspections.Add(Mapper.EntityInspectionToInspectionPreviewModel(currentInspection, diagnosisModel));
+            inspections.Add(Mapper.MapEntityInspectionToInspectionPreviewModel(currentInspection, diagnosisModel));
             currentInspection = await _db.Inspections
                 .Include(inspection => inspection.Diagnoses)
                 .FirstOrDefaultAsync(i => i.PreviousInspectionId == currentInspection.Id);

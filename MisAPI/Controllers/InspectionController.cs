@@ -26,7 +26,7 @@ public class InspectionController : AuthorizeController
     public async Task<IActionResult> PutInspection([FromRoute] Guid id, [FromBody] InspectionEditModel inspection)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        return await _inspectionService.PutInspection(id, inspection, DoctorId);
+        return await _inspectionService.EditInspection(id, inspection, DoctorId);
     }
     
     [HttpGet("{id:guid}/chain")]
