@@ -80,19 +80,16 @@ public class PatientService : IPatientService
                 patient.Inspections.Max(inspection => inspection.Date)),
             _ => patients
         };
-        var totalCount = await patients.CountAsync();
-
-        if (page > totalCount / size && totalCount > 0)
-        {
+        var totalPages = (int)Math.Ceiling((double) await patients.CountAsync() / size);
+        
+        if (page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
-        }
-
-        var totalPages = (int)Math.Ceiling((double)totalCount / size);
+        
         var patientModelList = patients
             .Skip((page - 1) * size)
             .Take(size)
             .Include(patient => patient.Inspections)
-            .Select(Mapper.EntityPatientToPatientModel)
+            .Select(Mapper.MapEntityPatientToPatientModel)
             .ToList();
 
         return new PatientPagedListModel(
@@ -104,7 +101,7 @@ public class PatientService : IPatientService
 
     public async Task<Guid> CreateInspection(Guid id, InspectionCreateModel inspectionCreateModel, Guid doctorId)
     {
-        var inspection = Mapper.InspectionCreateModelToInspection(inspectionCreateModel);
+        var inspection = Mapper.MapInspectionCreateModelToInspection(inspectionCreateModel);
 
 
         if (inspection.Date > DateTime.Now)
@@ -143,7 +140,7 @@ public class PatientService : IPatientService
 
         var diagnoses = await Task.WhenAll(inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
         {
-            var diagnosisEntity = Mapper.DiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
+            var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
             var diagnosisFromDb =
                 await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
 
@@ -184,11 +181,11 @@ public class PatientService : IPatientService
         return inspection.Id;
     }
 
-    public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, IEnumerable<Guid>? icdRoots,
+    public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, ICollection<Guid>? icdRoots,
         int page, int size, Guid doctorId)
     {
         var enumerable = icdRoots != null ? icdRoots.ToList() : new List<Guid>();
-        await CheckAreIcdRootsExist(enumerable);
+        await _icd10DictionaryService.CheckAreIcdRootsExist(icdRoots);
 
         var inspections = _db.Inspections
             .AsQueryable()
@@ -206,22 +203,19 @@ public class PatientService : IPatientService
             .Select(inspection =>
             {
                 var diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main);
-                var diagnosisModel = diagnosis != null ? Mapper.DiagnosisToDiagnosisModel(diagnosis) : null;
-                return Mapper.EntityInspectionToInspectionPreviewModel(inspection, diagnosisModel);
+                if (diagnosis != null && icdRoots != null && !enumerable.Contains(diagnosis.IcdDiagnosisId))
+                    throw new InspectionNotFoundException(
+                        $"Inspection with id = {inspection.Id} not found because of icdRoots");
+                var diagnosisModel = diagnosis != null ? Mapper.MapDiagnosisToDiagnosisModel(diagnosis) : null;
+                return Mapper.MapEntityInspectionToInspectionPreviewModel(inspection, diagnosisModel);
             });
-
-        if (icdRoots != null)
-        {
-            inspectionsList = inspectionsList.Where(i =>
-                i.Diagnosis != null && enumerable.Contains(i.Diagnosis.Id));
-        }
-
+        
         inspectionsList = inspectionsList.ToList();
-        var count = inspectionsList.Count();
-        if (page > count / size && !inspectionsList.Any())
-            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
-        var totalPages = (int)Math.Ceiling((double)count / size);
+        var totalPages = (int)Math.Ceiling((double)inspectionsList.Count() / size);
+        
+        if (page > totalPages)
+            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
         inspectionsList = inspectionsList
             .Skip((page - 1) * size)
@@ -229,23 +223,12 @@ public class PatientService : IPatientService
         return new InspectionPagedListModel(inspectionsList, new PageInfoModel(size, totalPages, page));
     }
 
-
-    private async Task CheckAreIcdRootsExist(IEnumerable<Guid>? icdRoots)
-    {
-        if (icdRoots == null) return;
-        var icdRootsList = _db.Mkb10Roots.AsQueryable();
-        foreach (var icdRoot in icdRoots)
-        {
-            if (!await icdRootsList.AnyAsync(i => i.Id == icdRoot))
-                throw new IcdRootNotFoundException($"Icd root with id = {icdRoot} not found");
-        }
-    }
-
+    
     public async Task<PatientModel> GetPatientCard(Guid id, Guid doctorId)
     {
         var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == id);
         if (patient == null) throw new PatientNotFoundException($"Patient with id = {id} not found");
-        return Mapper.EntityPatientToPatientModel(patient);
+        return Mapper.MapEntityPatientToPatientModel(patient);
     }
 
     public Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId)
@@ -270,7 +253,7 @@ public class PatientService : IPatientService
         return Task.FromResult(
             newInspections
                 .AsEnumerable()
-                .Select(Mapper.EntityInspectionToInspectionShortModel)
+                .Select(Mapper.MapEntityInspectionToInspectionShortModel)
             );
     }
 }
