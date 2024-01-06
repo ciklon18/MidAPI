@@ -52,7 +52,7 @@ public class PatientController : AuthorizeController
     public Task<InspectionPagedListModel> GetPatientInspections(
         [FromRoute] Guid id,
         [FromQuery] bool grouped = false,
-        [FromQuery] IEnumerable<Guid>? icdRoots = null,
+        [FromQuery] ICollection<Guid>? icdRoots = null,
         [FromQuery] [Range(1, int.MaxValue)] int page = 1,
         [FromQuery] [Range(1, int.MaxValue)] int size = 5
     )
