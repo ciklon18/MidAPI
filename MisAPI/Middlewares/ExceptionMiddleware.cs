@@ -22,7 +22,7 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        
+
         catch (DoctorNotFoundException ex)
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
@@ -30,6 +30,15 @@ public class ExceptionMiddleware
         catch (ExpiredRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (IcdRootNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidValueForAttributePageException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+
         }
         catch (IncorrectPasswordException ex)
         {
@@ -46,15 +55,40 @@ public class ExceptionMiddleware
         catch (IncorrectGenderException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
-        } 
+        }
         catch (InvalidRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
+        catch (InspectionIsNotRootException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InspectionNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status404NotFound);
+        }
+        catch (IncorrectSpecialityException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
 
+        }
         catch (InvalidTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
+        }
+        catch (InvalidValueForAttributeDiagnosesException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidValueForAttributeDateException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (NotHavePermissionException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status403Forbidden);
+
         }
         catch (NullEmailException ex)
         {
@@ -64,17 +98,36 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
-        
+        catch (PatientNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (UnauthorizedException ex)
         {
             HandleException(context, ex, StatusCodes.Status401Unauthorized);
         }
+        catch (ConsultationNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+        catch (SpecialityNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
 
-
+        }
+        catch (ForbiddenLeaveCommentException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status403Forbidden);
+        }
+        catch (CommentNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
         catch (Exception ex)
         {
             HandleException(context, ex, StatusCodes.Status500InternalServerError);
         }
+
     }
     
     private static void HandleException(HttpContext context, Exception exception, int statusCode)

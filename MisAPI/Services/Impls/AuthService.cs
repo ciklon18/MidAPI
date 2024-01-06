@@ -53,6 +53,7 @@ public partial class AuthService : IAuthService
         
         return new ResponseModel { Status = null, Message = "Logout successful" };
     }
+    
 
     public async Task<RefreshResponseModel> Refresh(RefreshRequestModel refreshRequestModel)
     {
