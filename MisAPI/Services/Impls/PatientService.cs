@@ -141,15 +141,15 @@ public class PatientService : IPatientService
 
         if (inspectionCreateModel.Diagnoses == null || !inspectionCreateModel.Diagnoses.Any())
             throw new InvalidValueForAttributeDiagnosesException("Diagnoses cannot be null or empty");
-        if (inspectionCreateModel.Diagnoses.All(d => d.Type != DiagnosisType.Main))
-            throw new InvalidValueForAttributeDiagnosesException("Inspection must have at least one main diagnosis");
+        if (inspectionCreateModel.Diagnoses.Count(d => d.Type == DiagnosisType.Main) != 1)
+            throw new InvalidValueForAttributeDiagnosesException("Inspection must have one main diagnosis");
 
-
-        var tasks = inspectionCreateModel.Diagnoses.Select(async diagnosisCreateModel =>
+        var diagnoses = new List<Diagnosis>();
+        foreach (var diagnosisCreateModel in inspectionCreateModel.Diagnoses)
         {
             var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
-            var diagnosisFromDb = await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
-
+            var diagnosisFromDb = 
+                await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
             if (diagnosisFromDb == null)
                 throw new DiagnosisNotFoundException(
                     $"Diagnosis with id = {diagnosisCreateModel.IcdDiagnosisId} not found");
@@ -157,9 +157,9 @@ public class PatientService : IPatientService
             diagnosisEntity.Code = diagnosisFromDb.Code;
             diagnosisEntity.Name = diagnosisFromDb.Name;
             diagnosisEntity.InspectionId = inspection.Id;
-
-            return diagnosisEntity;
-        });
+          
+            diagnoses.Add(diagnosisEntity);
+        }
 
 
         var baseInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty || id == Guid.Empty
@@ -200,16 +200,11 @@ public class PatientService : IPatientService
         inspection.PreviousInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty
             ? null
             : inspectionCreateModel.PreviousInspectionId;
-        var diagnosisEntities = await Task.WhenAll(tasks);
+        inspection.Diagnoses = diagnoses;
+        await _db.Inspections.AddAsync(inspection);
 
-        inspection.Diagnoses = diagnosisEntities;
-         await _db.Inspections.AddAsync(inspection);
-
-        await _db.Diagnoses.AddRangeAsync(diagnosisEntities);
-
-        
+        await _db.Diagnoses.AddRangeAsync(diagnoses);
         await _db.SaveChangesAsync();
-
         return inspection.Id;
     }
 
