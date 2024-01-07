@@ -176,26 +176,35 @@ public class PatientService : IPatientService
             diagnoses.Add(diagnosisEntity);
         }
 
-        var baseInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty || id == Guid.Empty
-            ? Guid.Empty
-            : await _db.Inspections
-                .Where(i => i.Id == inspectionCreateModel.PreviousInspectionId)
-                .Select(i => i.BaseInspectionId)
-                .FirstOrDefaultAsync();
-
-        if (baseInspectionId != null && baseInspectionId != Guid.Empty)
+        if (inspectionCreateModel.PreviousInspectionId != Guid.Empty)
         {
-            var baseInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == baseInspectionId);
+            var baseInspection = await _db.Inspections
+                .Where(i => i.Id == inspectionCreateModel.PreviousInspectionId)
+                .Join(
+                    _db.Inspections,
+                    firstInspection => firstInspection.BaseInspectionId ?? firstInspection.Id,
+                    secondInspection => secondInspection.Id,
+                    (firstInspection, secondInspection) => secondInspection
+                )
+                .FirstOrDefaultAsync();
             if (baseInspection == null)
-                throw new InspectionNotFoundException($"Inspection with id = {baseInspectionId} not found");
+                throw new InspectionNotFoundException(
+                    $"Inspection with id = {inspectionCreateModel.PreviousInspectionId} not found");
             if (baseInspection.Date > inspection.Date)
                 throw new InvalidValueForAttributeDateException(
                     "Date of inspection cannot be earlier than date of base inspection");
-            if (patient.Inspections.Any(i => i is { Conclusion: Conclusion.Recovery, BaseInspectionId: not null }))
+            if (patient.Inspections.Any(i => i.Conclusion == Conclusion.Recovery && i.BaseInspectionId == baseInspection.Id))
                 throw new InvalidValueForAttributeConclusionException(
                     "Inspection cannot be created because patient has recovery conclusion");
             inspection.BaseInspectionId = baseInspection.Id;
+            inspection.PreviousInspectionId = inspectionCreateModel.PreviousInspectionId;
         }
+        else
+        {
+            inspection.PreviousInspectionId = null;
+            inspection.BaseInspectionId = null;
+        }
+
 
 
         inspection.PatientId = patient.Id;
@@ -206,9 +215,7 @@ public class PatientService : IPatientService
             inspection.NextVisitDate?.ToUniversalTime();
         inspection.DeathDate = inspection.DeathDate?.ToUniversalTime();
 
-        inspection.PreviousInspectionId = inspectionCreateModel.PreviousInspectionId == Guid.Empty
-            ? null
-            : inspectionCreateModel.PreviousInspectionId;
+
 
         var consultations = new List<Consultation>();
 
@@ -265,7 +272,7 @@ public class PatientService : IPatientService
             DiagnosisModel? diagnosisModel = null;
             if (diagnosis != null && (isIcdRootsNullOrEmpty || await _db.Icd10
                     .AnyAsync(d =>
-                        d.IdGuid == diagnosis.IcdDiagnosisId 
+                        d.IdGuid == diagnosis.IcdDiagnosisId
                         && !isIcdRootsNullOrEmpty
                         && icdRoots.Contains((Guid)d.IdGuid))))
             {
@@ -274,7 +281,8 @@ public class PatientService : IPatientService
 
             var hasChain = inspection.BaseInspectionId == null;
             var hasNested = await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == inspection.Id);
-            previewInspectionsList.Add(Mapper.MapEntityInspectionToInspectionPreviewModel(inspection, diagnosisModel, hasChain, hasNested));
+            previewInspectionsList.Add(
+                Mapper.MapEntityInspectionToInspectionPreviewModel(inspection, diagnosisModel, hasChain, hasNested));
         }
 
 
@@ -304,7 +312,7 @@ public class PatientService : IPatientService
             .Where(i => i.PatientId == id)
             .Include(i => i.Diagnoses)
             .AsQueryable();
-        
+
         var newInspections = inspections
             .Where(i =>
                 i.BaseInspectionId == Guid.Empty ||

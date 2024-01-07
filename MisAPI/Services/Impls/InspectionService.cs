@@ -6,6 +6,7 @@ using MisAPI.Exceptions;
 using MisAPI.Mappers;
 using MisAPI.Models.Api;
 using MisAPI.Models.Request;
+using MisAPI.Models.Response;
 using MisAPI.Services.Interfaces;
 
 namespace MisAPI.Services.Impls;
@@ -25,11 +26,29 @@ public class InspectionService : IInspectionService
             .Include(i => i.Patient)
             .Include(i => i.Doctor)
             .Include(i => i.Diagnoses)
+            .Include(i => i.Consultations)!
+            .ThenInclude(c => c.RootComment)
+            .Include(i => i.Consultations)!
+            .ThenInclude(c => c.Speciality)
+            .FirstOrDefaultAsync(i => i.Id == id)
+                         
+            ?? await _db.Inspections
+            .Include(i => i.Patient)
+            .Include(i => i.Doctor)
+            .Include(i => i.Diagnoses)
             .Include(i => i.Consultations)
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .Include(i => i.Consultations)
+            .FirstOrDefaultAsync(i => i.BaseInspectionId == id);
+        
         if (inspection == null) throw new InspectionNotFoundException("Inspection not found.");
-
-        return Mapper.MapEntityInspectionToInspectionModel(inspection);
+        var diagnoses = inspection.Diagnoses != null
+            ? inspection.Diagnoses.Select(Mapper.MapDiagnosisToDiagnosisModel)
+            : new List<DiagnosisModel>();
+        var consultations = inspection.Consultations != null
+            ? inspection.Consultations.Select(Mapper.MapConsultationToInspectionConsultationModel)
+            : new List<InspectionConsultationModel>();
+        
+        return Mapper.MapEntityInspectionToInspectionModel(inspection, diagnoses, consultations);
     }
 
     public async Task<IActionResult> EditInspection(Guid id, InspectionEditModel inspection, Guid doctorId)
@@ -62,6 +81,8 @@ public class InspectionService : IInspectionService
     {
         var rootInspection = await _db.Inspections
             .Include(inspection => inspection.Diagnoses)
+            .Include(inspection => inspection.Doctor)
+            .Include(inspection => inspection.Patient)
             .FirstOrDefaultAsync(i => i.Id == id);
 
         if (rootInspection == null) throw new InspectionNotFoundException("Inspection not found.");
@@ -69,7 +90,12 @@ public class InspectionService : IInspectionService
             throw new InspectionIsNotRootException("Inspection is not root.");
 
         var inspections = new List<InspectionPreviewModel>();
-        var currentInspection = rootInspection;
+        var currentInspection = await _db.Inspections
+            .Include(inspection => inspection.Diagnoses)
+            .Include(inspection => inspection.Doctor)
+            .Include(inspection => inspection.Patient)
+            .FirstOrDefaultAsync(i => i.PreviousInspectionId == rootInspection.Id);
+        
         while (currentInspection != null)
         {
             var diagnosis = currentInspection.Diagnoses?
@@ -82,6 +108,8 @@ public class InspectionService : IInspectionService
             inspections.Add(Mapper.MapEntityInspectionToInspectionPreviewModel(currentInspection, diagnosisModel, hasChain, hasNested));
             currentInspection = await _db.Inspections
                 .Include(inspection => inspection.Diagnoses)
+                .Include(inspection => inspection.Doctor)
+                .Include(inspection => inspection.Patient)
                 .FirstOrDefaultAsync(i => i.PreviousInspectionId == currentInspection.Id);
         }
 

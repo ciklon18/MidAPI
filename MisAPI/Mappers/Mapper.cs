@@ -169,7 +169,8 @@ public static class Mapper
         };
     }
 
-    public static InspectionModel MapEntityInspectionToInspectionModel(Inspection inspection)
+    public static InspectionModel MapEntityInspectionToInspectionModel(Inspection inspection, IEnumerable<DiagnosisModel> diagnoses,
+        IEnumerable<InspectionConsultationModel> consultations)
     {
         return new InspectionModel
         {
@@ -186,16 +187,12 @@ public static class Mapper
             BaseInspectionId = inspection.BaseInspectionId,
             PreviousInspectionId = inspection.PreviousInspectionId,
             Patient = MapPatientToPatientModel(inspection.Patient),
-            Diagnoses = inspection.Diagnoses != null
-                ? inspection.Diagnoses.Select(MapDiagnosisToDiagnosisModel)
-                : new List<DiagnosisModel>(),
-            Consultations = inspection.Consultations != null
-                ? inspection.Consultations.Select(MapConsultationToInspectionConsultationModel)
-                : new List<InspectionConsultationModel>()
+            Diagnoses = diagnoses.ToList(),
+            Consultations = consultations.ToList()
         };
     }
 
-    private static InspectionConsultationModel MapConsultationToInspectionConsultationModel(Consultation consultation)
+    public static InspectionConsultationModel MapConsultationToInspectionConsultationModel(Consultation consultation)
     {
         return new InspectionConsultationModel
         {
