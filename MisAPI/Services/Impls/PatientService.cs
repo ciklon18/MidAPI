@@ -17,13 +17,15 @@ public class PatientService : IPatientService
     private readonly ApplicationDbContext _db;
     private readonly IIcd10DictionaryService _icd10DictionaryService;
     private readonly IJwtService _jwtService;
+    private readonly IInspectionService _inspectionService;
 
     public PatientService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
-        IJwtService jwtService)
+        IJwtService jwtService, IInspectionService inspectionService)
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
         _jwtService = jwtService;
+        _inspectionService = inspectionService;
     }
 
 
@@ -113,136 +115,166 @@ public class PatientService : IPatientService
         if (patient == null) throw new PatientNotFoundException($"Patient with id = {id} not found");
         var inspection = Mapper.MapInspectionCreateModelToInspection(inspectionCreateModel);
 
-        if (patient.Inspections.Any(i => i.Conclusion == Conclusion.Death))
-            throw new InvalidValueForAttributeConclusionException(
-                "Inspection cannot be created because patient has death conclusion");
 
-        if (inspection.Date > DateTime.Now)
-            throw new InvalidValueForAttributeDateException("Date of inspection cannot be in the future");
-        if (inspection.PreviousInspectionId != Guid.Empty)
-        {
-            var previousInspection =
-                await _db.Inspections.FirstOrDefaultAsync(i => i.Id == inspection.PreviousInspectionId);
-            if (previousInspection == null)
-                throw new InspectionNotFoundException(
-                    $"Inspection with id = {inspection.PreviousInspectionId} not found");
-            if (previousInspection.PatientId != id)
-                throw new PatientNotFoundException("Previous inspection must belong to the same patient");
-            if (await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == inspection.PreviousInspectionId))
-                throw new InspectionIsNotRootException(
-                    $"Inspection with id = {inspection.PreviousInspectionId} cannot be more than one root");
-            if (previousInspection.Date > inspection.Date)
-                throw new InvalidValueForAttributeDateException(
-                    "Date of inspection cannot be earlier than date of previous inspection");
-        }
+        await ValidateDeathConclusion(patient.Inspections);
+        await ValidateInspectionDate(inspection.Date);
+        await ValidatePreviousInspectionAsync(inspection.PreviousInspectionId, patient.Id);
 
-        switch (inspection.Conclusion)
-        {
-            case Conclusion.Disease when inspection.NextVisitDate == null:
-                throw new InvalidValueForAttributeDateException(
-                    "Next visit date cannot be null if conclusion is disease");
-            case Conclusion.Death when inspection.DeathDate == null:
-                throw new InvalidValueForAttributeDateException("Death date cannot be null if conclusion is death");
-            case Conclusion.Recovery when inspection.DeathDate != null:
-                throw new InvalidValueForAttributeDateException("Death date must be null if conclusion is recovery");
-            case Conclusion.Recovery when inspection.NextVisitDate != null:
-                throw new InvalidValueForAttributeDateException(
-                    "Next visit date must be null if conclusion is recovery");
-            case Conclusion.Disease when inspection.DeathDate != null:
-                throw new InvalidValueForAttributeDateException("Death date must be null if conclusion is disease");
-            case Conclusion.Recovery when inspection.DeathDate != null:
-                throw new InvalidValueForAttributeDateException("Death date must be null if conclusion is recovery");
-        }
+        await _inspectionService.ValidateConclusionAndDates(Mapper
+            .MapInspectionCreateModelToConclusionAndDateValidationModel(inspectionCreateModel));
+        await _inspectionService.ValidateDiagnoses(inspectionCreateModel.Diagnoses);
 
-        if (inspectionCreateModel.Diagnoses == null || !inspectionCreateModel.Diagnoses.Any())
-            throw new InvalidValueForAttributeDiagnosesException("Diagnoses cannot be null or empty");
-        if (inspectionCreateModel.Diagnoses.Count(d => d.Type == DiagnosisType.Main) != 1)
-            throw new InvalidValueForAttributeDiagnosesException("Inspection must have one main diagnosis");
+        var diagnoses = await _inspectionService.MapDiagnosesAsync(inspection.Id, inspectionCreateModel.Diagnoses);
 
-        var diagnoses = new List<Diagnosis>();
-        foreach (var diagnosisCreateModel in inspectionCreateModel.Diagnoses)
-        {
-            var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
-            var diagnosisFromDb =
-                await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
-            if (diagnosisFromDb == null)
-                throw new DiagnosisNotFoundException(
-                    $"Diagnosis with id = {diagnosisCreateModel.IcdDiagnosisId} not found");
+        var consultations =
+            await CreateConsultationsAsync(inspectionCreateModel.Consultations, inspection.Id, doctorId);
 
-            diagnosisEntity.Code = diagnosisFromDb.Code;
-            diagnosisEntity.Name = diagnosisFromDb.Name;
-            diagnosisEntity.InspectionId = inspection.Id;
+        var (baseInspectionId, previousInspectionId) =
+            await GetBaseInspectionAsync(inspectionCreateModel, patient.Inspections, inspection);
 
-            diagnoses.Add(diagnosisEntity);
-        }
+        
+        var inspectionEntity = GetUpdatedInspectionEntity(inspection, doctorId, patient.Id, diagnoses, consultations,
+            baseInspectionId, previousInspectionId);
 
-        if (inspectionCreateModel.PreviousInspectionId != Guid.Empty)
-        {
-            var baseInspection = await _db.Inspections
-                .Where(i => i.Id == inspectionCreateModel.PreviousInspectionId)
-                .Join(
-                    _db.Inspections,
-                    firstInspection => firstInspection.BaseInspectionId ?? firstInspection.Id,
-                    secondInspection => secondInspection.Id,
-                    (firstInspection, secondInspection) => secondInspection
-                )
-                .FirstOrDefaultAsync();
-            if (baseInspection == null)
-                throw new InspectionNotFoundException(
-                    $"Inspection with id = {inspectionCreateModel.PreviousInspectionId} not found");
-            if (baseInspection.Date > inspection.Date)
-                throw new InvalidValueForAttributeDateException(
-                    "Date of inspection cannot be earlier than date of base inspection");
-            if (patient.Inspections.Any(i => i.Conclusion == Conclusion.Recovery && i.BaseInspectionId == baseInspection.Id))
-                throw new InvalidValueForAttributeConclusionException(
-                    "Inspection cannot be created because patient has recovery conclusion");
-            inspection.BaseInspectionId = baseInspection.Id;
-            inspection.PreviousInspectionId = inspectionCreateModel.PreviousInspectionId;
-        }
-        else
-        {
-            inspection.PreviousInspectionId = null;
-            inspection.BaseInspectionId = null;
-        }
-
-
-
-        inspection.PatientId = patient.Id;
-        inspection.DoctorId = doctorId;
-        inspection.CreateTime = DateTime.UtcNow;
-        inspection.Date = inspection.Date.ToUniversalTime();
-        inspection.NextVisitDate =
-            inspection.NextVisitDate?.ToUniversalTime();
-        inspection.DeathDate = inspection.DeathDate?.ToUniversalTime();
-
-
-
-        var consultations = new List<Consultation>();
-
-        if (inspectionCreateModel.Consultations != null)
-        {
-            foreach (var consultationCreateModel in inspectionCreateModel.Consultations)
-            {
-                if (!await _db.Specialities.AnyAsync(s => s.Id == consultationCreateModel.SpecialityId))
-                    throw new SpecialityNotFoundException(
-                        $"Specialty with id = {consultationCreateModel.SpecialityId} not found");
-                var consultation = Mapper.MapConsultationCreateModelToConsultation(consultationCreateModel,
-                    inspection.Id, doctorId);
-                consultations.Add(consultation);
-            }
-        }
-
-
-        inspection.Diagnoses = diagnoses;
-        inspection.Consultations = consultations;
-
-        await _db.Inspections.AddAsync(inspection);
+        await _db.Inspections.AddAsync(inspectionEntity);
 
         await _db.Diagnoses.AddRangeAsync(diagnoses);
         await _db.Consultations.AddRangeAsync(consultations);
 
         await _db.SaveChangesAsync();
         return inspection.Id;
+    }
+
+    private static Inspection GetUpdatedInspectionEntity(Inspection inspection, Guid doctorId, Guid patientId,
+        ICollection<Diagnosis> diagnoses, ICollection<Consultation> consultations, Guid? baseInspectionId, Guid? previousInspectionId)
+    {
+        inspection.PatientId = patientId;
+        inspection.DoctorId = doctorId;
+        inspection.CreateTime = DateTime.UtcNow;
+        inspection.Date = inspection.Date.ToUniversalTime();
+        inspection.NextVisitDate =
+            inspection.NextVisitDate?.ToUniversalTime();
+        inspection.DeathDate = inspection.DeathDate?.ToUniversalTime();
+        inspection.Diagnoses = diagnoses;
+        inspection.Consultations = consultations;
+        if (baseInspectionId != null) inspection.BaseInspectionId = baseInspectionId.Value;
+        if (previousInspectionId != null) inspection.PreviousInspectionId = previousInspectionId.Value;
+
+        return inspection;
+    }
+
+
+    private static Task ValidateDeathConclusion(IEnumerable<Inspection> inspections)
+    {
+        if (inspections.Any(i => i.Conclusion == Conclusion.Death))
+            throw new InvalidValueForAttributeConclusionException(
+                "Inspection cannot be created because the patient has a death conclusion");
+        return Task.CompletedTask;
+    }
+
+    private static Task ValidateInspectionDate(DateTime inspectionDate)
+    {
+        if (inspectionDate > DateTime.Now)
+            throw new InvalidValueForAttributeDateException("Date of inspection cannot be in the future");
+        return Task.CompletedTask;
+    }
+
+    private async Task ValidatePreviousInspectionAsync(Guid? previousInspectionId, Guid currentPatientId)
+    {
+        if (previousInspectionId != Guid.Empty)
+        {
+            var previousInspection = await _db.Inspections.FirstOrDefaultAsync(i => i.Id == previousInspectionId);
+
+            if (previousInspection == null)
+                throw new InspectionNotFoundException($"Inspection with id = {previousInspectionId} not found");
+
+            if (previousInspection.PatientId != currentPatientId)
+                throw new PatientNotFoundException("Previous inspection must belong to the same patient");
+
+            if (await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == previousInspectionId))
+                throw new InspectionIsNotRootException(
+                    $"Inspection with id = {previousInspectionId} cannot be more than one root");
+
+            if (previousInspection.Date > DateTime.Now)
+                throw new InvalidValueForAttributeDateException("Date of previous inspection cannot be in the future");
+
+            if (previousInspection.Date > DateTime.Now)
+                throw new InvalidValueForAttributeDateException(
+                    "Date of inspection cannot be earlier than date of previous inspection");
+        }
+    }
+
+    private async Task<List<Consultation>> CreateConsultationsAsync(
+        IEnumerable<ConsultationCreateModel>? consultationCreateModels, Guid inspectionId, Guid doctorId)
+    {
+        var consultations = new List<Consultation>();
+
+        if (consultationCreateModels == null) return consultations;
+        foreach (var consultationCreateModel in consultationCreateModels)
+        {
+            await ValidateSpecialtyExistsAsync(consultationCreateModel.SpecialityId);
+
+            var consultation =
+                Mapper.MapConsultationCreateModelToConsultation(consultationCreateModel, inspectionId, doctorId);
+            consultations.Add(consultation);
+        }
+
+        return consultations;
+    }
+
+    private async Task ValidateSpecialtyExistsAsync(Guid specialityId)
+    {
+        if (!await _db.Specialities.AnyAsync(s => s.Id == specialityId))
+            throw new SpecialityNotFoundException($"Specialty with id = {specialityId} not found");
+    }
+
+    private async Task<(Guid? baseInspectionId, Guid? previousInspectionId)> GetBaseInspectionAsync(
+        InspectionCreateModel inspectionCreateModel, IEnumerable<Inspection> patientInspections, Inspection inspection)
+    {
+        Guid? baseInspectionId = null;
+        Guid? previousInspectionId = null;
+
+        if (inspectionCreateModel.PreviousInspectionId != Guid.Empty)
+        {
+            var baseInspection = await FetchBaseInspectionAsync(inspectionCreateModel.PreviousInspectionId);
+
+            ValidateBaseInspection(baseInspection, inspection, patientInspections);
+
+            baseInspectionId = baseInspection.Id;
+            previousInspectionId = inspectionCreateModel.PreviousInspectionId;
+        }
+
+        return (baseInspectionId, previousInspectionId);
+    }
+
+    private async Task<Inspection> FetchBaseInspectionAsync(Guid previousInspectionId)
+    {
+        var baseInspection = await _db.Inspections
+            .Where(i => i.Id == previousInspectionId)
+            .Join(
+                _db.Inspections,
+                firstInspection => firstInspection.BaseInspectionId ?? firstInspection.Id,
+                secondInspection => secondInspection.Id,
+                (firstInspection, secondInspection) => secondInspection
+            )
+            .FirstOrDefaultAsync();
+
+        if (baseInspection == null)
+            throw new InspectionNotFoundException($"Inspection with id = {previousInspectionId} not found");
+
+        return baseInspection;
+    }
+
+    private void ValidateBaseInspection(Inspection baseInspection, Inspection inspection,
+        IEnumerable<Inspection> patientInspections)
+    {
+        if (baseInspection.Date > inspection.Date)
+            throw new InvalidValueForAttributeDateException(
+                "Date of inspection cannot be earlier than date of base inspection");
+
+        if (patientInspections.Any(i => i.Conclusion == Conclusion.Recovery && i.BaseInspectionId == baseInspection.Id))
+            throw new InvalidValueForAttributeConclusionException(
+                "Inspection cannot be created because the patient has a recovery conclusion");
     }
 
     public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, ICollection<Guid>? icdRoots,

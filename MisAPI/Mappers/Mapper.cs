@@ -225,15 +225,12 @@ public static class Mapper
 
     public static Inspection GetUpdatedInspectionEntity(Inspection inspectionEntity, InspectionEditModel inspection)
     {
-        inspectionEntity.Anamnesis = inspection.Anamnesis;
+        inspectionEntity.Anamnesis = inspection.Anamnesis ?? inspectionEntity.Anamnesis;
         inspectionEntity.Complaints = inspection.Complaints;
         inspectionEntity.Treatment = inspection.Treatment;
         inspectionEntity.Conclusion = inspection.Conclusion;
-        inspectionEntity.NextVisitDate = inspection.NextVisitDate;
-        inspectionEntity.DeathDate = inspection.DeathDate;
-        inspectionEntity.Diagnoses = inspection.Diagnoses
-            .Select(MapDiagnosisCreateModelToDiagnosis)
-            .ToList();
+        inspectionEntity.NextVisitDate = inspection.NextVisitDate?.ToUniversalTime() ?? null;
+        inspectionEntity.DeathDate = inspection.DeathDate?.ToUniversalTime() ?? null;
 
         return inspectionEntity;
     }
@@ -325,6 +322,25 @@ public static class Mapper
             ParentId = parentId,
             ModifyTime = null,
             Children = new List<Comment>()
+        };
+    }
+
+    public static ConclusionAndDateValidationModel MapInspectionCreateModelToConclusionAndDateValidationModel(InspectionCreateModel inspectionCreateModel)
+    {
+        return new ConclusionAndDateValidationModel
+        {
+            Conclusion = inspectionCreateModel.Conclusion,
+            DeathDate = inspectionCreateModel.DeathDate,
+            NextVisitDate = inspectionCreateModel.NextVisitDate
+        };
+    }
+    public static ConclusionAndDateValidationModel MapInspectionEditModelToConclusionAndDateValidationModel(InspectionEditModel inspectionEditModel)
+    {
+        return new ConclusionAndDateValidationModel
+        {
+            Conclusion = inspectionEditModel.Conclusion,
+            DeathDate = inspectionEditModel.DeathDate,
+            NextVisitDate = inspectionEditModel.NextVisitDate
         };
     }
 }

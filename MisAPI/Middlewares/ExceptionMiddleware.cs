@@ -73,6 +73,10 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
         }
+        catch (DiagnosisNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status404NotFound);
+        }
         catch (IncorrectSpecialityException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
