@@ -76,7 +76,10 @@ public class InspectionService : IInspectionService
                 .FirstOrDefault(d => d.Type == DiagnosisType.Main);
             var diagnosisModel = diagnosis != null ? Mapper.MapDiagnosisToDiagnosisModel(diagnosis) : null;
 
-            inspections.Add(Mapper.MapEntityInspectionToInspectionPreviewModel(currentInspection, diagnosisModel));
+            var hasChain = currentInspection.BaseInspectionId == null;
+            var hasNested = await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == currentInspection.Id);
+            
+            inspections.Add(Mapper.MapEntityInspectionToInspectionPreviewModel(currentInspection, diagnosisModel, hasChain, hasNested));
             currentInspection = await _db.Inspections
                 .Include(inspection => inspection.Diagnoses)
                 .FirstOrDefaultAsync(i => i.PreviousInspectionId == currentInspection.Id);

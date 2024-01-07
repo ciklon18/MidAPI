@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MisAPI.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MisAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240107070404_fix_comment_modify_time")]
+    partial class fix_comment_modify_time
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -339,10 +342,6 @@ namespace MisAPI.Migrations
                     b.Property<Guid?>("PreviousInspectionId")
                         .HasColumnType("uuid")
                         .HasColumnName("previous_inspection_id");
-
-                    b.Property<Guid?>("RootDiagnosisId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("root_diagnosis_id");
 
                     b.Property<string>("Treatment")
                         .HasColumnType("text")

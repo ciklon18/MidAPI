@@ -92,7 +92,7 @@ public static class Mapper
     }
 
     public static InspectionPreviewModel MapEntityInspectionToInspectionPreviewModel(Inspection inspection,
-        DiagnosisModel? diagnosisModel)
+        DiagnosisModel? diagnosisModel, bool hasChain, bool hasNested)
     {
         return new InspectionPreviewModel
         {
@@ -101,7 +101,13 @@ public static class Mapper
             Id = inspection.Id,
             Diagnosis = diagnosisModel,
             PatientId = inspection.PatientId,
-            DoctorId = inspection.DoctorId
+            DoctorId = inspection.DoctorId,
+            Conclusion = inspection.Conclusion,
+            HasChain = hasChain,
+            HasNested = hasNested,
+            PreviousId = inspection.PreviousInspectionId ?? null,
+            Patient = inspection.Patient.Name,
+            Doctor = inspection.Doctor.Name
         };
     }
 
@@ -215,7 +221,7 @@ public static class Mapper
             ParentId = consultationRootComment.ParentId,
             Content = consultationRootComment.Content,
             Author = MapDoctorToDoctorModel(consultationRootComment.Author),
-            ModifyTime = consultationRootComment.ModifyTime
+            ModifyTime = consultationRootComment.ModifyTime 
         };
         
     }
@@ -290,6 +296,38 @@ public static class Mapper
             ConsultationId = consultationId,
             Content = commentCreateModel.Content,
             ParentId = commentCreateModel.ParentId
+        };
+    }
+
+    public static Consultation MapConsultationCreateModelToConsultation(ConsultationCreateModel consultationCreateModel,
+        Guid inspectionId, Guid authorId)
+    {
+        var rootComment = MapCommentCreateModelToComment(consultationCreateModel.Comment, inspectionId, authorId, null);
+        return new Consultation
+        {
+            Id = Guid.NewGuid(),
+            CreateTime = DateTime.UtcNow,
+            InspectionId = inspectionId,
+            SpecialityId = consultationCreateModel.SpecialityId,
+            CommentsNumber = 1,
+            RootComment = rootComment,
+            RootCommentId = rootComment.Id
+        };
+    }
+
+    public static Comment MapCommentCreateModelToComment(InspectionCommentCreateModel comment, Guid consultationId,
+        Guid authorId, Guid? parentId)
+    {
+        return new Comment
+        {
+            Id = Guid.NewGuid(),
+            CreateTime = DateTime.UtcNow,
+            AuthorId = authorId,
+            ConsultationId = consultationId,
+            Content = comment.Content,
+            ParentId = parentId,
+            ModifyTime = null,
+            Children = new List<Comment>()
         };
     }
 }

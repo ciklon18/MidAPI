@@ -24,14 +24,14 @@ public class InspectionCreateModel
     public Conclusion Conclusion { get; set; }
     
     [DateValidator]
-    public DateTime NextVisitDate { get; set; }
+    public DateTime? NextVisitDate { get; set; }
     
     [DateValidator]
-    public DateTime DeathDate { get; set; }
+    public DateTime? DeathDate { get; set; }
     
     public Guid PreviousInspectionId { get; set; }
     [Required]
     public IEnumerable<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
     
-    public IEnumerable<ConsultationCreateModel> Consultations { get; set; } = null!;
+    public IEnumerable<ConsultationCreateModel>? Consultations { get; set; } = null!;
 }
