@@ -87,8 +87,9 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         };
     }
     
-    
-    public async Task CheckAreIcdRootsExist(IEnumerable<Guid>? icdRoots)
+
+
+    public async Task CheckAreIcdRootsExist(ICollection<Guid>? icdRoots)
     {
         if (icdRoots == null) return;
         var icdRootsList = _db.Icd10Roots.AsQueryable();
@@ -99,9 +100,9 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         }
     }
 
-    public async Task<ICollection<Icd10Root>> GetRootsByIcdList(IEnumerable<Guid>? icdRoots)
+    public async Task<ICollection<Icd10RootModel>> GetRootsByIcdList(ICollection<Guid>? icdRoots)
     {
-        if (icdRoots == null ) return new List<Icd10Root>();
+        if (icdRoots == null) return new List<Icd10RootModel>();
         var roots = icdRoots.ToList();
 
         var existingRoots = await _db.Icd10Roots
@@ -115,6 +116,15 @@ public class Icd10DictionaryService : IIcd10DictionaryService
             throw new IcdRootNotFoundException($"Icd roots with ids {string.Join(", ", enumerable)} not found");
         }
 
-        return existingRoots;
+        return existingRoots
+            .Select(r => new Icd10RootModel(r.Id, r.CreateTime, r.Code ?? "", r.Name))
+            .ToList();
+    }
+
+    public async Task<ICollection<Icd10RootModel>> GetRootsWithoutIcdList()
+    {
+        return await _db.Icd10Roots
+            .Select(r => new Icd10RootModel(r.Id, r.CreateTime, r.Code ?? "", r.Name))
+            .ToListAsync();
     }
 }

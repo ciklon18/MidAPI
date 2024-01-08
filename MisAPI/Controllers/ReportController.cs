@@ -19,10 +19,9 @@ public class ReportController : AuthorizeController
     public async Task<IcdRootsReportModel> GetIcdRootsReport(
         [Required] [FromQuery] [DateValidator] DateTime start,
         [Required] [FromQuery] [DateValidator] DateTime end,
-        [FromQuery] IEnumerable<Guid>? icdRoots = null
+        [FromQuery] ICollection<Guid>? icdRoots = null
     )
     {
-        var report = await _reportService.GetIcdRootsReportAsync(start, end, icdRoots, DoctorId);
-        return report;
+        return await _reportService.GetIcdRootsReportAsync(start.ToUniversalTime(), end.ToUniversalTime(), icdRoots, DoctorId);
     }
 }

@@ -27,7 +27,9 @@ public class ConsultationService : IConsultationService
     public async Task<InspectionPagedListModel> GetConsultationInspectionsAsync(IEnumerable<Guid>? icdRoots, int page,
         int size, bool grouped, Guid doctorId)
     {
-        var icdRootsList = await _icd10DictionaryService.GetRootsByIcdList(icdRoots);
+        var icdRootsList = icdRoots != null
+            ? await _icd10DictionaryService.GetRootsByIcdList(icdRoots.ToList())
+            : new List<Icd10RootModel>();
         var specialityId = await _db.Doctors
             .Where(d => d.Id == doctorId)
             .Select(d => d.SpecialityId)
@@ -55,11 +57,10 @@ public class ConsultationService : IConsultationService
                 .Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
         }
 
-        if (icdRoots != null && icdRootsList.Any())
+        if (icdRootsList.Any())
         {
-
             var icdRootsIds = icdRootsList.Select(r => r.Id);
-            
+
             inspections = inspections
                 .Where(i => i.Diagnoses != null && i.Diagnoses
                     .Where(d => d.IcdRootId != null && d.IcdRootId != Guid.Empty && d.Type == DiagnosisType.Main)
@@ -151,18 +152,18 @@ public class ConsultationService : IConsultationService
         if (parentComment != null && parentComment.ConsultationId != consultationId)
             throw new ForbiddenLeaveCommentException(
                 $"Comment with id = {commentCreateModel.ParentId} is not a comment of the consultation with id = {consultationId}");
-        
+
         if (doctor.SpecialityId != consultation.SpecialityId)
             throw new ForbiddenLeaveCommentException(
                 $"Doctor doesn't have a specialty to participate in the consultation with id = {consultationId}");
         var comment = Mapper.MapCommentCreateToComment(commentCreateModel, doctorId, consultationId);
         consultation.CommentsNumber++;
-        
+
         parentComment?.Children?.Add(comment);
         await _db.Comments.AddAsync(comment);
-        _db.Comments.Update(parentComment);
+        if (parentComment != null) _db.Comments.Update(parentComment);
         _db.Consultations.Update(consultation);
-        
+
         await _db.SaveChangesAsync();
 
         return new OkResult();

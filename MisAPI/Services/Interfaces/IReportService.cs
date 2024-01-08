@@ -4,5 +4,5 @@ namespace MisAPI.Services.Interfaces;
 
 public interface IReportService
 {
-    Task<IcdRootsReportModel> GetIcdRootsReportAsync(DateTime start, DateTime end, IEnumerable<Guid>? icdRoots, Guid doctorId);
+    Task<IcdRootsReportModel> GetIcdRootsReportAsync(DateTime start, DateTime end, ICollection<Guid>? icdRoots, Guid doctorId);
 }
