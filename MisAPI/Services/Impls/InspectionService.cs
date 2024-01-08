@@ -39,7 +39,6 @@ public class InspectionService : IInspectionService
                              .Include(i => i.Doctor)
                              .Include(i => i.Diagnoses)
                              .Include(i => i.Consultations)
-                             .Include(i => i.Consultations)
                              .FirstOrDefaultAsync(i => i.BaseInspectionId == id);
 
         if (inspection == null) throw new InspectionNotFoundException("Inspection not found.");

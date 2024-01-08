@@ -297,9 +297,7 @@ public class PatientService : IPatientService
 
         var previewInspectionsList = new List<InspectionPreviewModel>();
         var isIcdRootsNullOrEmpty = icdRoots.IsNullOrEmpty();
-        
         var icdRootsList = await _icd10DictionaryService.GetRootsByIcdList(icdRoots);
-
         var icdRootsIds = icdRootsList.Select(r => r.Id).ToList();
 
         

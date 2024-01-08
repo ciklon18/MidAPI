@@ -83,8 +83,9 @@ public class ConsultationService : IConsultationService
 
     public async Task<ConsultationModel> GetConsultationAsync(Guid id, Guid doctorId)
     {
-        // важно что нужно получить все комментарии, пройдясь по поддереву
-        var consultation = await _db.Consultations.FirstOrDefaultAsync(c => c.Id == id);
+        var consultation = await _db.Consultations
+            .Include(c => c.RootComment)
+            .FirstOrDefaultAsync(c => c.Id == id);
         if (consultation == null)
             throw new ConsultationNotFoundException("Consultation not found");
         var consultationSpeciality = await _db.Specialities.FirstOrDefaultAsync(s => s.Id == consultation.SpecialityId);
@@ -105,7 +106,7 @@ public class ConsultationService : IConsultationService
 
         await GetCommentTreeAsync(comments, consultation.RootComment);
 
-        return comments;
+        return comments.OrderBy(c => c.CreateTime);
     }
 
     private async Task GetCommentTreeAsync(ICollection<Comment> comments, Comment rootComment)
@@ -142,13 +143,26 @@ public class ConsultationService : IConsultationService
         var consultation = await _db.Consultations.FirstOrDefaultAsync(c => c.Id == consultationId);
         if (consultation == null)
             throw new ConsultationNotFoundException("Consultation not found");
-
+        var parentComment = await _db.Comments
+            .Include(c => c.Children)
+            .FirstOrDefaultAsync(c => c.Id == commentCreateModel.ParentId);
+        if (parentComment == null)
+            throw new CommentNotFoundException($"Comment with id = {commentCreateModel.ParentId} not found");
+        if (parentComment != null && parentComment.ConsultationId != consultationId)
+            throw new ForbiddenLeaveCommentException(
+                $"Comment with id = {commentCreateModel.ParentId} is not a comment of the consultation with id = {consultationId}");
+        
         if (doctor.SpecialityId != consultation.SpecialityId)
             throw new ForbiddenLeaveCommentException(
                 $"Doctor doesn't have a specialty to participate in the consultation with id = {consultationId}");
         var comment = Mapper.MapCommentCreateToComment(commentCreateModel, doctorId, consultationId);
-
+        consultation.CommentsNumber++;
+        
+        parentComment?.Children?.Add(comment);
         await _db.Comments.AddAsync(comment);
+        _db.Comments.Update(parentComment);
+        _db.Consultations.Update(consultation);
+        
         await _db.SaveChangesAsync();
 
         return new OkResult();

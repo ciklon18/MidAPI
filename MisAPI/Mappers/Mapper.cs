@@ -136,24 +136,7 @@ public static class Mapper
         };
     }
 
-
-    private static ConsultationModel MapConsultationToConsultationModel(Consultation consultation)
-    {
-        return new ConsultationModel
-        {
-            Id = consultation.Id,
-            CreateTime = consultation.CreateTime,
-            InspectionId = consultation.InspectionId,
-            Speciality = new SpecialityModel
-            {
-                Id = consultation.SpecialityId,
-                Name = consultation.Speciality.Name
-            },
-            Comments = consultation.RootComment.Children != null
-                ? consultation.RootComment.Children.Select(MapCommentToCommentModel).ToList()
-                : new List<CommentModel>()
-        };
-    }
+    
 
     private static CommentModel MapCommentToCommentModel(Comment consultationRootComment)
     {
@@ -308,7 +291,7 @@ public static class Mapper
         };
     }
 
-    public static Comment MapCommentCreateModelToComment(InspectionCommentCreateModel comment, Guid consultationId,
+    private static Comment MapCommentCreateModelToComment(InspectionCommentCreateModel comment, Guid consultationId,
         Guid authorId, Guid? parentId)
     {
         return new Comment
