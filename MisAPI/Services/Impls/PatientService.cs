@@ -132,7 +132,7 @@ public class PatientService : IPatientService
         var (baseInspectionId, previousInspectionId) =
             await GetBaseInspectionAsync(inspectionCreateModel, patient.Inspections, inspection);
 
-        
+
         var inspectionEntity = GetUpdatedInspectionEntity(inspection, doctorId, patient.Id, diagnoses, consultations,
             baseInspectionId, previousInspectionId);
 
@@ -146,7 +146,8 @@ public class PatientService : IPatientService
     }
 
     private static Inspection GetUpdatedInspectionEntity(Inspection inspection, Guid doctorId, Guid patientId,
-        ICollection<Diagnosis> diagnoses, ICollection<Consultation> consultations, Guid? baseInspectionId, Guid? previousInspectionId)
+        ICollection<Diagnosis> diagnoses, ICollection<Consultation> consultations, Guid? baseInspectionId,
+        Guid? previousInspectionId)
     {
         inspection.PatientId = patientId;
         inspection.DoctorId = doctorId;
@@ -234,15 +235,13 @@ public class PatientService : IPatientService
         Guid? baseInspectionId = null;
         Guid? previousInspectionId = null;
 
-        if (inspectionCreateModel.PreviousInspectionId != Guid.Empty)
-        {
-            var baseInspection = await FetchBaseInspectionAsync(inspectionCreateModel.PreviousInspectionId);
+        if (inspectionCreateModel.PreviousInspectionId == Guid.Empty) return (baseInspectionId, previousInspectionId);
+        var baseInspection = await FetchBaseInspectionAsync(inspectionCreateModel.PreviousInspectionId);
 
-            ValidateBaseInspection(baseInspection, inspection, patientInspections);
+        await ValidateBaseInspection(baseInspection, inspection, patientInspections);
 
-            baseInspectionId = baseInspection.Id;
-            previousInspectionId = inspectionCreateModel.PreviousInspectionId;
-        }
+        baseInspectionId = baseInspection.Id;
+        previousInspectionId = inspectionCreateModel.PreviousInspectionId;
 
         return (baseInspectionId, previousInspectionId);
     }
@@ -265,7 +264,7 @@ public class PatientService : IPatientService
         return baseInspection;
     }
 
-    private void ValidateBaseInspection(Inspection baseInspection, Inspection inspection,
+    private static Task ValidateBaseInspection(Inspection baseInspection, Inspection inspection,
         IEnumerable<Inspection> patientInspections)
     {
         if (baseInspection.Date > inspection.Date)
@@ -275,6 +274,7 @@ public class PatientService : IPatientService
         if (patientInspections.Any(i => i.Conclusion == Conclusion.Recovery && i.BaseInspectionId == baseInspection.Id))
             throw new InvalidValueForAttributeConclusionException(
                 "Inspection cannot be created because the patient has a recovery conclusion");
+        return Task.CompletedTask;
     }
 
     public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, ICollection<Guid>? icdRoots,
@@ -295,22 +295,24 @@ public class PatientService : IPatientService
                 inspections.Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
         }
 
-        var inspectionsList = await inspections.ToListAsync();
         var previewInspectionsList = new List<InspectionPreviewModel>();
         var isIcdRootsNullOrEmpty = icdRoots.IsNullOrEmpty();
-        foreach (var inspection in inspectionsList)
+        
+        var icdRootsList = await _icd10DictionaryService.GetRootsByIcdList(icdRoots);
+
+        var icdRootsIds = icdRootsList.Select(r => r.Id).ToList();
+
+        
+        foreach (var inspection in await inspections.ToListAsync())
         {
             var diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main);
             DiagnosisModel? diagnosisModel = null;
-            if (diagnosis != null && (isIcdRootsNullOrEmpty || await _db.Icd10
-                    .AnyAsync(d =>
-                        d.IdGuid == diagnosis.IcdDiagnosisId
-                        && !isIcdRootsNullOrEmpty
-                        && icdRoots.Contains((Guid)d.IdGuid))))
+            if (diagnosis != null && (isIcdRootsNullOrEmpty || icdRootsIds.Contains((Guid)diagnosis.IcdRootId!)))
             {
                 diagnosisModel = Mapper.MapDiagnosisToDiagnosisModel(diagnosis);
             }
-
+            if (diagnosisModel == null) continue;
+            
             var hasChain = inspection.BaseInspectionId == null;
             var hasNested = await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == inspection.Id);
             previewInspectionsList.Add(

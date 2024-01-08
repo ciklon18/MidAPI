@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MisAPI.Data;
 using MisAPI.Entities;
+using MisAPI.Enums;
 using MisAPI.Exceptions;
 using MisAPI.Mappers;
 using MisAPI.Models.Api;
@@ -27,15 +28,26 @@ public class ConsultationService : IConsultationService
         int size, bool grouped, Guid doctorId)
     {
         var icdRootsList = await _icd10DictionaryService.GetRootsByIcdList(icdRoots);
+        var specialityId = await _db.Doctors
+            .Where(d => d.Id == doctorId)
+            .Select(d => d.SpecialityId)
+            .FirstOrDefaultAsync();
+        if (specialityId == Guid.Empty)
+            throw new IncorrectSpecialityException("Doctor has no speciality");
 
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId);
-        var specialtyId = doctor?.SpecialityId;
-        if (specialtyId == null || specialtyId == Guid.Empty)
-            throw new IncorrectSpecialityException("Doctor has no specialty");
+        if (!_db.Specialities.Any(s => s.Id == specialityId))
+            throw new IncorrectSpecialityException("Doctor has no speciality");
+
 
         var inspections = _db.Inspections
-            .Where(i => i.Consultations != null && i.Consultations.Any(c => c.SpecialityId == specialtyId));
-
+            .Include(i => i.Diagnoses)
+            .Include(i => i.Consultations)
+            .ThenInclude(c => c.Speciality)
+            .Include(i => i.Doctor)
+            .Include(i => i.Patient)
+            .Where(i => i.Consultations.Any(c => c.SpecialityId == specialityId || c.Speciality.Id == specialityId))
+            .OrderByDescending(i => i.CreateTime)
+            .AsQueryable();
 
         if (grouped)
         {
@@ -43,11 +55,16 @@ public class ConsultationService : IConsultationService
                 .Where(i => i.PreviousInspectionId == null || i.PreviousInspectionId == Guid.Empty);
         }
 
-        if (icdRoots != null)
+        if (icdRoots != null && icdRootsList.Any())
         {
+
+            var icdRootsIds = icdRootsList.Select(r => r.Id);
+            
             inspections = inspections
-                .Where(i => i.Diagnoses != null && i.Diagnoses.All(d =>
-                    icdRootsList.Any(r => r.Id == d.IcdDiagnosisId)));
+                .Where(i => i.Diagnoses != null && i.Diagnoses
+                    .Where(d => d.IcdRootId != null && d.IcdRootId != Guid.Empty && d.Type == DiagnosisType.Main)
+                    .Select(d => d.IcdRootId)
+                    .Any(r => icdRootsIds.Contains((Guid)r!)));
         }
 
         var totalPages = (int)Math.Ceiling((double)await inspections.CountAsync() / size);
@@ -142,19 +159,19 @@ public class ConsultationService : IConsultationService
         InspectionCommentCreateModel inspectionCommentCreateModel, Guid doctorId)
     {
         var comment = await _db.Comments.FirstOrDefaultAsync(c => c.Id == commentId);
-        
+
         if (comment == null) throw new CommentNotFoundException($"Comment with id = {commentId} not found");
-        
+
         if (comment.AuthorId != doctorId)
             throw new ForbiddenLeaveCommentException(
                 $"Doctor with id = {doctorId} is not the author of the comment with id = {commentId}");
 
         comment.ModifyTime = DateTime.UtcNow;
         comment.Content = inspectionCommentCreateModel.Content;
-        
+
         _db.Comments.Update(comment);
         await _db.SaveChangesAsync();
-        
+
         return new OkResult();
     }
 }

@@ -87,13 +87,14 @@ public class InspectionService : IInspectionService
 
         foreach (var diagnosisCreateModel in diagnosisCreateModels)
         {
-            var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
+            
             var diagnosisFromDb =
                 await _icd10DictionaryService.GetIcd10DiagnosisAsync(diagnosisCreateModel.IcdDiagnosisId);
-
+            var diagnosisEntity = Mapper.MapDiagnosisCreateModelToDiagnosis(diagnosisCreateModel);
             diagnosisEntity.Code = diagnosisFromDb.Code;
             diagnosisEntity.Name = diagnosisFromDb.Name;
             diagnosisEntity.InspectionId = inspectionId;
+            diagnosisEntity.IcdRootId = diagnosisFromDb.IcdRootId;
 
             diagnoses.Add(diagnosisEntity);
         }

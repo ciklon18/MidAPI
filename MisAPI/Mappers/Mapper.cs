@@ -60,8 +60,7 @@ public static class Mapper
             Id = Guid.NewGuid(),
             CreateTime = DateTime.UtcNow,
             Description = diagnosisCreateModel.Description,
-            Type = diagnosisCreateModel.Type,
-            IcdDiagnosisId = diagnosisCreateModel.IcdDiagnosisId
+            Type = diagnosisCreateModel.Type
         };
     }
 
@@ -252,7 +251,7 @@ public static class Mapper
             Patient = inspection.Patient.Name,
             HasChain = inspection.PreviousInspectionId != null && inspection.PreviousInspectionId != Guid.Empty,
             HasNested = inspection.BaseInspectionId != null && inspection.BaseInspectionId != Guid.Empty,
-            PreviousId = inspection.PreviousInspectionId ?? Guid.Empty
+            PreviousId = inspection.PreviousInspectionId ?? null
         };
     }
 

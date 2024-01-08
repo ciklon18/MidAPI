@@ -9,7 +9,7 @@ public interface IIcd10DictionaryService
     Task<SpecialtiesPagedListModel> GetSpecialtiesAsync(string? name, int page, int size);
     Task<Icd10SearchModel> GetIcd10DiagnosesAsync(string? request, int page, int size);
     Task<Icd10RootsResponseModel> GetIcd10RootsAsync();
-    Task<DiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId);
+    Task<ExtendedDiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId);
     Task CheckAreIcdRootsExist(IEnumerable<Guid>? icdRoots);
-    Task<IEnumerable<Icd10Root>> GetRootsByIcdList(IEnumerable<Guid>? icdRoots);
+    Task<ICollection<Icd10Root>> GetRootsByIcdList(IEnumerable<Guid>? icdRoots);
 }
