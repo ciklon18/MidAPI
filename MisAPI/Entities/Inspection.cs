@@ -22,6 +22,7 @@ public class Inspection
     public Patient Patient { get; set; } = null!;
     [Column("doctor_id")] public Guid DoctorId { get; set; }
     public Doctor Doctor { get; set; } = null!;
+
     [Column("diagnoses")] public ICollection<Diagnosis>? Diagnoses { get; set; } = new List<Diagnosis>();
     [Column("consultations")] public ICollection<Consultation>? Consultations { get; set; } = new List<Consultation>();
 }

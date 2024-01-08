@@ -12,7 +12,7 @@ public class Comment
     [Column("content")] public string? Content { get; set; }
     [Column("author_id")] public Guid AuthorId { get; set; }
     public Doctor Author { get; set; } = null!;
-    [Column("modify_time")] public DateTime ModifyTime { get; set; }
+    [Column("modify_time")] public DateTime? ModifyTime { get; set; }
 
     [Column("consultation_id")] public Guid ConsultationId { get; set; }
     public Consultation Consultation { get; set; } = null!;

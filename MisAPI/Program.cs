@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MisAPI.Configurations;
 using MisAPI.Data;
@@ -45,6 +44,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.AddJwt(builder.Configuration);
 builder.Services.AddSingletons(builder.Configuration);
 builder.Services.AddServices();
 

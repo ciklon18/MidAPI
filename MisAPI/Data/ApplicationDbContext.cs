@@ -25,18 +25,7 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-    
-        modelBuilder.Entity<Patient>()
-            .HasMany(p => p.Inspections)
-            .WithOne(i => i.Patient)
-            .HasForeignKey(i => i.PatientId)
-            .OnDelete(DeleteBehavior.Cascade);
-    
-        modelBuilder.Entity<Inspection>()
-            .HasMany(i => i.Diagnoses)
-            .WithOne(d => d.Inspection)
-            .HasForeignKey(d => d.InspectionId)
-            .OnDelete(DeleteBehavior.Cascade);
+        
         
         modelBuilder.Entity<Consultation>()
             .HasOne(i => i.RootComment)

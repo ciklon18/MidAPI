@@ -10,7 +10,7 @@ public class InspectionPreviewModel
     
     [DateValidator] public DateTime CreateTime { get; set; }
     
-    public Guid PreviousId { get; set; }
+    public Guid? PreviousId { get; set; }
 
     [DateValidator] public DateTime Date { get; set; }
 

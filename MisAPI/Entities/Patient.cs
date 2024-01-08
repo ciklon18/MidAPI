@@ -25,4 +25,5 @@ public class Patient
     public ICollection<Inspection> Inspections { get; set; } = new List<Inspection>();
 
     [Column("doctor_id")] public Guid DoctorId { get; set; }
+    public Doctor Doctor { get; set; } = null!;
 }

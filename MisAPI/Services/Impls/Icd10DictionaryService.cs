@@ -73,16 +73,17 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         return new Icd10RootsResponseModel(roots);
     }
 
-    public async Task<DiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId)
+    public async Task<ExtendedDiagnosisModel> GetIcd10DiagnosisAsync(Guid icdDiagnosisId)
     {
-        var diagnosis = await _db.Icd10.FirstOrDefaultAsync(d => d.IdGuid == icdDiagnosisId);
-        if (diagnosis == null) throw new DiagnosisNotFoundException($"Diagnosis with id = {icdDiagnosisId} not found");
-        return new DiagnosisModel
+        var icd10 = await _db.Icd10.FirstOrDefaultAsync(d => d.IdGuid == icdDiagnosisId);
+        if (icd10 == null) throw new DiagnosisNotFoundException($"Diagnosis with id = {icdDiagnosisId} not found");
+        return new ExtendedDiagnosisModel
         {
-            Id = diagnosis.IdGuid ?? new Guid(),
-            CreateTime = diagnosis.CreateTime,
-            Code = diagnosis.IcdCode,
-            Name = diagnosis.IcdName
+            Id = icd10.IdGuid ?? new Guid(),
+            CreateTime = icd10.CreateTime,
+            Code = icd10.IcdCode,
+            Name = icd10.IcdName,
+            IcdRootId = icd10.RootIdGuid
         };
     }
     
@@ -98,9 +99,22 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         }
     }
 
-    public async Task<IEnumerable<Icd10Root>> GetRootsByIcdList(IEnumerable<Guid>? icdRoots)
+    public async Task<ICollection<Icd10Root>> GetRootsByIcdList(IEnumerable<Guid>? icdRoots)
     {
-        await CheckAreIcdRootsExist(icdRoots);
-        throw new NotImplementedException();
+        if (icdRoots == null ) return new List<Icd10Root>();
+        var roots = icdRoots.ToList();
+
+        var existingRoots = await _db.Icd10Roots
+            .Where(i => roots.Contains(i.Id))
+            .ToListAsync();
+
+        var nonExistingRoots = roots.Except(existingRoots.Select(r => r.Id));
+        var enumerable = nonExistingRoots.ToList();
+        if (enumerable.Any())
+        {
+            throw new IcdRootNotFoundException($"Icd roots with ids {string.Join(", ", enumerable)} not found");
+        }
+
+        return existingRoots;
     }
 }

@@ -4,7 +4,7 @@ namespace MisAPI.Models.Response;
 
 public record InspectionPagedListModel(IEnumerable<InspectionPreviewModel> Inspections, PageInfoModel Pagination)
 {
-    public InspectionPagedListModel() : this(Enumerable.Empty<InspectionPreviewModel>(), new PageInfoModel())
+    public InspectionPagedListModel() : this(new List<InspectionPreviewModel>(), new PageInfoModel())
     {
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MisAPI.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MisAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240106164856_fix_patient_fk")]
+    partial class fix_patient_fk
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,7 +51,7 @@ namespace MisAPI.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("create_time");
 
-                    b.Property<DateTime?>("ModifyTime")
+                    b.Property<DateTime>("ModifyTime")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("modify_time");
 
@@ -123,9 +126,9 @@ namespace MisAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<Guid?>("IcdRootId")
+                    b.Property<Guid>("IcdDiagnosisId")
                         .HasColumnType("uuid")
-                        .HasColumnName("icd_root_id");
+                        .HasColumnName("icd_diagnosis_id");
 
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")

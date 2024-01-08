@@ -27,6 +27,11 @@ public class ExceptionMiddleware
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
         }
+        catch (InvalidValueForAttributeConclusionException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+
+        }
         catch (ExpiredRefreshTokenException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);
@@ -65,6 +70,10 @@ public class ExceptionMiddleware
             HandleException(context, ex, StatusCodes.Status400BadRequest);
         }
         catch (InspectionNotFoundException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status404NotFound);
+        }
+        catch (DiagnosisNotFoundException ex)
         {
             HandleException(context, ex, StatusCodes.Status404NotFound);
         }

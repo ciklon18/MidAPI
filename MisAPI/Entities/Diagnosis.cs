@@ -15,6 +15,5 @@ public class Diagnosis
     [Column("type")] public DiagnosisType Type { get; set; }
     [Column("inspection_id")] public Guid InspectionId { get; set; }
     public Inspection Inspection { get; set; } = null!;
-    [Column("icd_diagnosis_id")] public Guid IcdDiagnosisId { get; set; }
-
+    [Column("icd_root_id")] public Guid? IcdRootId { get; set; }
 }

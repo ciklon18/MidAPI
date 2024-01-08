@@ -25,10 +25,17 @@ public partial class AuthService : IAuthService
     {
         await IsDoctorUnique(doctorRegisterModel.Email);
         await ValidateRegisterData(doctorRegisterModel);
+        await IsSpecialityExists(doctorRegisterModel.Speciality);
         var newDoctor = CreateHashDoctor(doctorRegisterModel);
         await _db.Doctors.AddAsync(newDoctor);
         await _db.SaveChangesAsync();
         return new RegistrationResponseModel { Id = newDoctor.Id };
+    }
+
+    private async Task IsSpecialityExists(Guid speciality)
+    {
+        var specialityExists = await _db.Specialities.AnyAsync(s => s.Id == speciality);
+        if (!specialityExists) throw new SpecialityNotFoundException($"Speciality with id = {speciality} not found");
     }
 
     public async Task<TokenResponseModel> Login(DoctorLoginModel doctorLoginModel)
