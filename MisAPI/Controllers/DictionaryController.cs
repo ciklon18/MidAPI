@@ -14,6 +14,7 @@ public class DictionaryController : BaseController
         _dictionaryService = dictionaryService;
     }
 
+    
     [HttpGet("speciality")]
     public async Task<SpecialtiesPagedListModel> GetSpecialties(
         [FromQuery] string? name,
