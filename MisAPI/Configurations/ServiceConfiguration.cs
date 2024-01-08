@@ -31,5 +31,7 @@ public static class ServiceConfiguration
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IInspectionService, InspectionService>();
         services.AddScoped<IConsultationService, ConsultationService>();
+        services.AddScoped<IReportService, ReportService>();
+        
     }
 }
