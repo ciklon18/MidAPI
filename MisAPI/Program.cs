@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using MisAPI.Configurations;
 using MisAPI.Data;
 using MisAPI.Middlewares;
+using MisAPI.Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,8 +61,10 @@ if (dbContext != null)
     dbContext.Database.Migrate();
     var migrator = app.Services.GetRequiredService<DatabaseMigrator>();
     migrator.MigrateDatabase();
-    
 }
+await NotificationScheduler.Start(app.Services);
+
+
 
 app.UseExceptionMiddleware();
 

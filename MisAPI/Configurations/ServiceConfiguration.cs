@@ -2,8 +2,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using MisAPI.Converters;
 using MisAPI.Data;
+using MisAPI.Quartz;
 using MisAPI.Services.Impls;
 using MisAPI.Services.Interfaces;
+using MisAPI.Worker;
 
 namespace MisAPI.Configurations;
 
@@ -18,7 +20,7 @@ public static class ServiceConfiguration
         services.AddSingleton<GuidConverter>();
         services.AddSingleton<GenderConverter>();
         services.AddSingleton<DatabaseMigrator>();
-
+        
     }
 
     public static void AddServices(this IServiceCollection services)
@@ -32,6 +34,9 @@ public static class ServiceConfiguration
         services.AddScoped<IInspectionService, InspectionService>();
         services.AddScoped<IConsultationService, ConsultationService>();
         services.AddScoped<IReportService, ReportService>();
-        
+
+        services.AddTransient<JobFactory>();
+        services.AddScoped<NotificationBackgroundJob>();
+        services.AddScoped<IEmailSender, EmailSender>();
     }
 }
