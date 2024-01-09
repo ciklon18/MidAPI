@@ -2,9 +2,9 @@
 
 namespace MisAPI.Models.Response;
 
-public record PatientPagedListModel(IEnumerable<PatientModel> Patients, PageInfoModel Pagination)
+public record PatientPagedListModel(ICollection<PatientModel> Patients, PageInfoModel Pagination)
 {
-    public PatientPagedListModel() : this(Array.Empty<PatientModel>(), new PageInfoModel()
+    public PatientPagedListModel() : this(new List<PatientModel>(), new PageInfoModel()
     )
     {
     }

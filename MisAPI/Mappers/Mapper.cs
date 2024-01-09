@@ -325,4 +325,5 @@ public static class Mapper
             NextVisitDate = inspectionEditModel.NextVisitDate
         };
     }
+
 }

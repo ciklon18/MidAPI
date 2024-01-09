@@ -19,7 +19,7 @@ public class InspectionController : AuthorizeController
     [HttpGet("{id:guid}")]
     public async Task<InspectionModel> GetInspection([FromRoute] Guid id)
     {
-        return await _inspectionService.GetInspection(id, DoctorId);
+        return await _inspectionService.GetInspection(id);
     }
     
     [HttpPut("{id:guid}")]
@@ -30,9 +30,9 @@ public class InspectionController : AuthorizeController
     }
     
     [HttpGet("{id:guid}/chain")]
-    public async Task<IEnumerable<InspectionPreviewModel>> GetInspectionChain([FromRoute] Guid id)
+    public async Task<ICollection<InspectionPreviewModel>> GetInspectionChain([FromRoute] Guid id)
     {
-        return await _inspectionService.GetInspectionChain(id, DoctorId);
+        return await _inspectionService.GetInspectionChain(id);
     }
 
 }

@@ -20,7 +20,9 @@ public partial class AuthService : IAuthService
         _db = db;
         _jwtService = jwtService;
     }
-    
+
+
+
     public async Task<RegistrationResponseModel> Register(DoctorRegisterModel doctorRegisterModel)
     {
         await IsDoctorUnique(doctorRegisterModel.Email);
@@ -44,35 +46,35 @@ public partial class AuthService : IAuthService
         CheckIsValidPassword(doctorLoginModel.Password, doctor.Password);
         var existingRefreshToken = await _jwtService.GetRefreshTokenByGuidAsync(doctor.Id);
         var accessToken = _jwtService.GenerateAccessToken(doctor.Id);
-        
+
         var refreshToken = existingRefreshToken ?? _jwtService.GenerateRefreshToken(doctor.Id);
         if (refreshToken != existingRefreshToken) await _jwtService.SaveRefreshTokenAsync(refreshToken, doctor.Id);
-        
+
         return new TokenResponseModel { AccessToken = accessToken, RefreshToken = refreshToken };
     }
 
     public async Task<ResponseModel> Logout(Guid doctorId)
     {
         if (doctorId == Guid.Empty) throw new DoctorNotFoundException("doctor not found");
-        var refreshToken = await _jwtService.GetRefreshTokenByGuidAsync(doctorId);
-        if (refreshToken == null) throw new NullTokenException("Refresh token not found");
+        var refreshToken = await _jwtService.GetRefreshTokenByGuidAsync(doctorId) ??
+                           throw new NullTokenException("Refresh token not found");
         await _jwtService.RevokeRefreshTokenAsync(refreshToken);
-        
+
         return new ResponseModel { Status = null, Message = "Logout successful" };
     }
-    
+
 
     public async Task<RefreshResponseModel> Refresh(RefreshRequestModel refreshRequestModel)
     {
         var doctorGuid = _jwtService.GetGuidFromRefreshToken(refreshRequestModel.RefreshToken);
-        
+
         await _jwtService.ValidateRefreshTokenAsync(refreshRequestModel.RefreshToken);
         var doctor = await GetDoctorByGuid(doctorGuid);
         var accessToken = _jwtService.GenerateAccessToken(doctor.Id);
         return new RefreshResponseModel { AccessToken = accessToken };
     }
-    
-    
+
+
     private async Task IsDoctorUnique(string? doctorEmail)
     {
         var doctor = await _db.Doctors.FirstOrDefaultAsync(u => u.Email == doctorEmail);
@@ -94,11 +96,11 @@ public partial class AuthService : IAuthService
         if (doctor == null) throw new DoctorNotFoundException("Wrong email or password");
         return doctor;
     }
+
     private async Task<Doctor> GetDoctorByGuid(Guid doctorId)
     {
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(u => u.Id == doctorId);
-        if (doctor == null) throw new DoctorNotFoundException("doctor not found");
-        return doctor;
+        return await _db.Doctors.FirstOrDefaultAsync(u => u.Id == doctorId) ??
+               throw new DoctorNotFoundException("doctor not found");
     }
 
 
@@ -118,13 +120,14 @@ public partial class AuthService : IAuthService
             SpecialityId = doctorRegisterModel.Speciality
         };
     }
-    
+
     private static Task ValidateRegisterData(DoctorRegisterModel doctorRegisterModel)
     {
         if (!PhoneNumberRegex().IsMatch(doctorRegisterModel.Phone))
         {
             throw new IncorrectPhoneException(EntityConstants.IncorrectPhoneNumberError);
         }
+
         if (!PasswordRegex().IsMatch(doctorRegisterModel.Password))
         {
             throw new IncorrectRegisterDataException(EntityConstants.IncorrectPasswordError);
@@ -137,15 +140,14 @@ public partial class AuthService : IAuthService
 
         return Task.CompletedTask;
     }
-    
-    
 
-    
+
     [GeneratedRegex(pattern: EntityConstants.PhoneNumberRegex)]
     private static partial Regex PhoneNumberRegex();
-    
+
     [GeneratedRegex(pattern: EntityConstants.EmailRegex)]
-    private static partial Regex EmailRegex();    
+    private static partial Regex EmailRegex();
+
     [GeneratedRegex(pattern: EntityConstants.PasswordRegex)]
     private static partial Regex PasswordRegex();
 }

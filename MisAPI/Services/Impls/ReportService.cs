@@ -20,8 +20,10 @@ public class ReportService : IReportService
     }
 
     public async Task<IcdRootsReportModel> GetIcdRootsReportAsync(DateTime start, DateTime end,
-        ICollection<Guid>? icdRoots, Guid doctorId)
+        ICollection<Guid>? icdRoots)
     {
+        if (start > end) throw new ArgumentException("Start date must be less than end date");
+        if (start > DateTime.UtcNow || end > DateTime.UtcNow) throw new ArgumentException("Date must be in the past");
         var icdRootsEntities = !icdRoots.IsNullOrEmpty()
             ? await _icd10DictionaryService.GetRootsByIcdList(icdRoots)
             : await _icd10DictionaryService.GetRootsWithoutIcdList();
@@ -30,14 +32,17 @@ public class ReportService : IReportService
         {
             Start = start,
             End = end,
-            IcdRoots = icdRootsEntities.Select(x => x.Code).OrderBy(x => x).ToList()
+            IcdRoots = icdRootsEntities
+                .Select(x => x.Code)
+                .OrderBy(x => x)
+                .ToList()
         };
         var inspections = await _db.Inspections
             .Include(x => x.Diagnoses)
             .Include(x => x.Consultations)
             .Where(x => x.Date >= start && x.Date <= end)
             .ToListAsync();
-
+        
         var patientDiseases = new Dictionary<Guid, Dictionary<Guid, int>>();
 
         foreach (var inspection in inspections)
@@ -50,14 +55,14 @@ public class ReportService : IReportService
                 await GetPatientDiseases(inspection, patientDiseases[inspection.PatientId]);
         }
 
-        var records = new List<IcdRootsReportRecordModel>();
         var summaryByRoot = new Dictionary<string, int>();
         foreach (var icd in icdRootsEntities)
         {
             summaryByRoot.TryAdd(icd.Code, 0);
         }
-
-        foreach (var (patientId, value) in patientDiseases)
+        
+        var records = new List<IcdRootsReportRecordModel>();
+        foreach (var (patientId, diseaseDetails) in patientDiseases)
         {
             var patient = await _db.Patients.FirstOrDefaultAsync(x => x.Id == patientId);
             if (patient == null) continue;
@@ -70,7 +75,7 @@ public class ReportService : IReportService
                 VisitsByRoot = new Dictionary<string, int>()
             };
 
-            foreach (var (diseaseId, diseaseCount) in value)
+            foreach (var (diseaseId, diseaseCount) in diseaseDetails)
             {
                 var disease = await _db.Icd10Roots.FirstOrDefaultAsync(x => x.Id == diseaseId);
                 if (disease?.Code == null) continue;
@@ -103,7 +108,6 @@ public class ReportService : IReportService
             {
                 patientDisease.TryAdd(icdRoot.Id, 0);
             }
-
             patientDisease[icdRoot.Id]++;
         }
 

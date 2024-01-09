@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MisAPI.Data;
-using MisAPI.Entities;
 using MisAPI.Exceptions;
 using MisAPI.Models.Api;
 using MisAPI.Models.Response;
@@ -22,22 +21,22 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         var lowerName = name?.ToLower();
         var specialties = _db.Specialities
             .Where(s => lowerName == null || s.Name.ToLower().Contains(lowerName));
-        var specialtiesCount = await specialties.CountAsync();
+        
+        var totalPages = (int)Math.Ceiling((double)await specialties.CountAsync() / size);
+        if (page != 1 && page > totalPages)
+            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
+        
         var selectedSpecialties = specialties
             .Skip((page - 1) * size)
             .Take(size);
-        if (page > specialtiesCount / size && !await selectedSpecialties.AnyAsync())
-            throw new InvalidValueForAttributePageException("Invalid value for attribute page");
         var selectedModelSpecialties = await selectedSpecialties
             .Select(s => new SpecialityModel(s.Id, s.Name, s.CreateTime))
             .ToListAsync();
-
-        var count = specialtiesCount / size;
-        if (specialtiesCount % size != 0) count++;
+        
         var specialtiesPagedListModel = new SpecialtiesPagedListModel
         {
             Specialities = selectedModelSpecialties,
-            Pagination = new PageInfoModel(size, count, page)
+            Pagination = new PageInfoModel(size, totalPages, page)
         };
         return specialtiesPagedListModel;
     }
@@ -47,22 +46,19 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         var lowerRequest = request != null ? request.ToLower() : "";
         var diagnoses = _db.Icd10
             .Where(d => d.IcdCode.ToLower().Contains(lowerRequest) || d.IcdName.ToLower().Contains(lowerRequest));
-        var diagnosesCount = await diagnoses.CountAsync();
-        var selectedDiagnoses = diagnoses
-            .Skip((page - 1) * size)
-            .Take(size);
-        if (page > diagnosesCount / size && !await selectedDiagnoses.AnyAsync())
+
+        var totalPages = (int)Math.Ceiling((double)await diagnoses.CountAsync() / size);
+        if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
-        var recordDiagnoses = selectedDiagnoses.Select(d =>
-            new Icd10RecordModel(d.IdGuid ?? new Guid(), d.CreateTime, d.IcdCode, d.IcdName));
+        var recordDiagnoses = await diagnoses
+            .Skip((page - 1) * size)
+            .Take(size)
+            .Select(d => new Icd10RecordModel(d.IdGuid ?? new Guid(), d.CreateTime, d.IcdCode, d.IcdName))
+            .ToListAsync();
 
-        
-        var count = diagnosesCount / size;
-        if (diagnosesCount % size != 0) count++;
-
-        var pagination = new PageInfoModel(size, count, page);
-        return new Icd10SearchModel(await recordDiagnoses.ToListAsync(), pagination);
+        var pagination = new PageInfoModel(size, totalPages, page);
+        return new Icd10SearchModel( recordDiagnoses, pagination);
     }
 
     public async Task<Icd10RootsResponseModel> GetIcd10RootsAsync()
@@ -103,17 +99,17 @@ public class Icd10DictionaryService : IIcd10DictionaryService
     public async Task<ICollection<Icd10RootModel>> GetRootsByIcdList(ICollection<Guid>? icdRoots)
     {
         if (icdRoots == null) return new List<Icd10RootModel>();
-        var roots = icdRoots.ToList();
 
         var existingRoots = await _db.Icd10Roots
-            .Where(i => roots.Contains(i.Id))
+            .Where(i => icdRoots.Contains(i.Id))
             .ToListAsync();
 
-        var nonExistingRoots = roots.Except(existingRoots.Select(r => r.Id));
-        var enumerable = nonExistingRoots.ToList();
-        if (enumerable.Any())
+        var nonExistingRoots = icdRoots
+            .Except(existingRoots.Select(r => r.Id))
+            .ToList();
+        if (nonExistingRoots.Any())
         {
-            throw new IcdRootNotFoundException($"Icd roots with ids {string.Join(", ", enumerable)} not found");
+            throw new IcdRootNotFoundException($"Icd roots with ids {string.Join(", ", nonExistingRoots)} not found");
         }
 
         return existingRoots

@@ -19,7 +19,7 @@ public class ConsultationController : AuthorizeController
     [HttpGet]
     public async Task<InspectionPagedListModel> GetConsultations(
         [FromQuery] bool grouped = false,
-        [FromQuery] IEnumerable<Guid>? icdRoots = null,
+        [FromQuery] ICollection<Guid>? icdRoots = null,
         [FromQuery] [Range(1, int.MaxValue)] int page = 1,
         [FromQuery] [Range(1, int.MaxValue)] int size = 5
     )
@@ -30,7 +30,7 @@ public class ConsultationController : AuthorizeController
     [HttpGet("{id:Guid}")]
     public async Task<ConsultationModel> GetConsultation([FromRoute] Guid id)
     {
-        var consultation = await _consultationService.GetConsultationAsync(id, DoctorId);
+        var consultation = await _consultationService.GetConsultationAsync(id);
         return consultation;
     }
 

@@ -90,7 +90,7 @@ public class PatientService : IPatientService
         };
         var totalPages = (int)Math.Ceiling((double)await patients.CountAsync() / size);
 
-        if (page > totalPages)
+        if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
         var patientModelList = patients
@@ -165,7 +165,7 @@ public class PatientService : IPatientService
     }
 
 
-    private static Task ValidateDeathConclusion(IEnumerable<Inspection> inspections)
+    private static Task ValidateDeathConclusion(ICollection<Inspection> inspections)
     {
         if (inspections.Any(i => i.Conclusion == Conclusion.Death))
             throw new InvalidValueForAttributeConclusionException(
@@ -206,7 +206,7 @@ public class PatientService : IPatientService
     }
 
     private async Task<List<Consultation>> CreateConsultationsAsync(
-        IEnumerable<ConsultationCreateModel>? consultationCreateModels, Guid inspectionId, Guid doctorId)
+        ICollection<ConsultationCreateModel>? consultationCreateModels, Guid inspectionId, Guid doctorId)
     {
         var consultations = new List<Consultation>();
 
@@ -230,7 +230,7 @@ public class PatientService : IPatientService
     }
 
     private async Task<(Guid? baseInspectionId, Guid? previousInspectionId)> GetBaseInspectionAsync(
-        InspectionCreateModel inspectionCreateModel, IEnumerable<Inspection> patientInspections, Inspection inspection)
+        InspectionCreateModel inspectionCreateModel, ICollection<Inspection> patientInspections, Inspection inspection)
     {
         Guid? baseInspectionId = null;
         Guid? previousInspectionId = null;
@@ -265,7 +265,7 @@ public class PatientService : IPatientService
     }
 
     private static Task ValidateBaseInspection(Inspection baseInspection, Inspection inspection,
-        IEnumerable<Inspection> patientInspections)
+        ICollection<Inspection> patientInspections)
     {
         if (baseInspection.Date > inspection.Date)
             throw new InvalidValueForAttributeDateException(
@@ -278,7 +278,7 @@ public class PatientService : IPatientService
     }
 
     public async Task<InspectionPagedListModel> GetInspections(Guid id, bool grouped, ICollection<Guid>? icdRoots,
-        int page, int size, Guid doctorId)
+        int page, int size)
     {
         await _icd10DictionaryService.CheckAreIcdRootsExist(icdRoots);
 
@@ -320,7 +320,7 @@ public class PatientService : IPatientService
 
         var totalPages = (int)Math.Ceiling((double)previewInspectionsList.Count / size);
 
-        if (page > totalPages)
+        if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
         previewInspectionsList = previewInspectionsList
@@ -331,14 +331,14 @@ public class PatientService : IPatientService
     }
 
 
-    public async Task<PatientModel> GetPatientCard(Guid id, Guid doctorId)
+    public async Task<PatientModel> GetPatientCard(Guid id)
     {
         var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == id);
         if (patient == null) throw new PatientNotFoundException($"Patient with id = {id} not found");
         return Mapper.MapEntityPatientToPatientModel(patient);
     }
 
-    public Task<IEnumerable<InspectionShortModel>> SearchInspections(Guid id, string? request, Guid doctorId)
+    public Task<ICollection<InspectionShortModel>> SearchInspections(Guid id, string? request)
     {
         var inspections = _db.Inspections
             .Where(i => i.PatientId == id)
@@ -360,7 +360,8 @@ public class PatientService : IPatientService
 
         var result = newInspections
             .AsEnumerable()
-            .Select(Mapper.MapEntityInspectionToInspectionShortModel);
-        return Task.FromResult(result);
+            .Select(Mapper.MapEntityInspectionToInspectionShortModel)
+            .ToList();
+        return Task.FromResult((ICollection<InspectionShortModel>)result);
     }
 }

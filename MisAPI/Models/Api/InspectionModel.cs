@@ -37,7 +37,7 @@ public class InspectionModel
     
     public DoctorModel Doctor { get; set; } = null!;
 
-    public IEnumerable<DiagnosisModel> Diagnoses { get; set; } = new List<DiagnosisModel>();
+    public ICollection<DiagnosisModel> Diagnoses { get; set; } = new List<DiagnosisModel>();
     
-    public IEnumerable<InspectionConsultationModel> Consultations { get; set; } = new List<InspectionConsultationModel>();
+    public ICollection<InspectionConsultationModel> Consultations { get; set; } = new List<InspectionConsultationModel>();
 }

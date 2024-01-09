@@ -24,7 +24,7 @@ public class ConsultationService : IConsultationService
     }
 
 
-    public async Task<InspectionPagedListModel> GetConsultationInspectionsAsync(IEnumerable<Guid>? icdRoots, int page,
+    public async Task<InspectionPagedListModel> GetConsultationInspectionsAsync(ICollection<Guid>? icdRoots, int page,
         int size, bool grouped, Guid doctorId)
     {
         var icdRootsList = icdRoots != null
@@ -43,14 +43,15 @@ public class ConsultationService : IConsultationService
 
         var inspections = _db.Inspections
             .Include(i => i.Diagnoses)
-            .Include(i => i.Consultations)
+            .Include(i => i.Consultations)!
             .ThenInclude(c => c.Speciality)
             .Include(i => i.Doctor)
             .Include(i => i.Patient)
-            .Where(i => i.Consultations.Any(c => c.SpecialityId == specialityId || c.Speciality.Id == specialityId))
+            .Where(i => i.Consultations != null && i.Consultations.Any(c =>
+                c.SpecialityId == specialityId || c.Speciality.Id == specialityId))
             .OrderByDescending(i => i.CreateTime)
             .AsQueryable();
-
+        
         if (grouped)
         {
             inspections = inspections
@@ -70,34 +71,36 @@ public class ConsultationService : IConsultationService
 
         var totalPages = (int)Math.Ceiling((double)await inspections.CountAsync() / size);
 
-        if (page > totalPages)
+        if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
 
         var inspectionsList = inspections
             .Skip((page - 1) * size)
             .Take(size)
             .AsEnumerable()
-            .Select(Mapper.InspectionToInspectionPreviewModel);
+            .Select(Mapper.InspectionToInspectionPreviewModel)
+            .ToList();
         return new InspectionPagedListModel(inspectionsList, new PageInfoModel(size, totalPages, page));
     }
 
 
-    public async Task<ConsultationModel> GetConsultationAsync(Guid id, Guid doctorId)
+    public async Task<ConsultationModel> GetConsultationAsync(Guid id)
     {
         var consultation = await _db.Consultations
             .Include(c => c.RootComment)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (consultation == null)
-            throw new ConsultationNotFoundException("Consultation not found");
-        var consultationSpeciality = await _db.Specialities.FirstOrDefaultAsync(s => s.Id == consultation.SpecialityId);
-        if (consultationSpeciality == null)
-            throw new SpecialityNotFoundException($"Speciality with id = {consultation.SpecialityId} not found");
+            .FirstOrDefaultAsync(c => c.Id == id)
+            ?? throw new ConsultationNotFoundException("Consultation not found");
+        
+        var consultationSpeciality = await _db.Specialities
+            .FirstOrDefaultAsync(s => s.Id == consultation.SpecialityId)
+            ?? throw new SpecialityNotFoundException($"Speciality with id = {consultation.SpecialityId} not found");
+        
         var comments = await GetConsultationCommentsAsync(consultation);
 
         return Mapper.ConsultationToConsultationModel(consultation, consultationSpeciality, comments);
     }
 
-    private async Task<IEnumerable<Comment>> GetConsultationCommentsAsync(Consultation consultation)
+    private async Task<ICollection<Comment>> GetConsultationCommentsAsync(Consultation consultation)
     {
         var comments = await _db.Comments
             .Include(c => c.Author)
@@ -107,7 +110,7 @@ public class ConsultationService : IConsultationService
 
         await GetCommentTreeAsync(comments, consultation.RootComment);
 
-        return comments.OrderBy(c => c.CreateTime);
+        return comments.OrderBy(c => c.CreateTime).ToList();
     }
 
     private async Task GetCommentTreeAsync(ICollection<Comment> comments, Comment rootComment)
@@ -139,43 +142,47 @@ public class ConsultationService : IConsultationService
     public async Task<IActionResult> AddCommentToConsultationAsync(Guid consultationId,
         CommentCreateModel commentCreateModel, Guid doctorId)
     {
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId);
-        if (doctor == null) throw new DoctorNotFoundException($"Doctor with id = {doctorId} not found");
-        var consultation = await _db.Consultations.FirstOrDefaultAsync(c => c.Id == consultationId);
-        if (consultation == null)
-            throw new ConsultationNotFoundException("Consultation not found");
-        var parentComment = await _db.Comments
-            .Include(c => c.Children)
-            .FirstOrDefaultAsync(c => c.Id == commentCreateModel.ParentId);
-        if (parentComment == null)
-            throw new CommentNotFoundException($"Comment with id = {commentCreateModel.ParentId} not found");
-        if (parentComment != null && parentComment.ConsultationId != consultationId)
-            throw new ForbiddenLeaveCommentException(
-                $"Comment with id = {commentCreateModel.ParentId} is not a comment of the consultation with id = {consultationId}");
+        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId)
+                     ?? throw new DoctorNotFoundException($"Doctor with id = {doctorId} not found");
+
+        var consultation = await _db.Consultations.FirstOrDefaultAsync(c => c.Id == consultationId)
+                           ?? throw new ConsultationNotFoundException("Consultation not found");
 
         if (doctor.SpecialityId != consultation.SpecialityId)
             throw new ForbiddenLeaveCommentException(
                 $"Doctor doesn't have a specialty to participate in the consultation with id = {consultationId}");
+        
+        var parentComment = await _db.Comments
+                                .Include(c => c.Children)
+                                .FirstOrDefaultAsync(c => c.Id == commentCreateModel.ParentId)
+                            ?? throw new CommentNotFoundException(
+                                $"Comment with id = {commentCreateModel.ParentId} not found");
+
+        if (parentComment.ConsultationId != consultationId)
+            throw new ForbiddenLeaveCommentException(
+                $"Comment with id = {commentCreateModel.ParentId} is not a comment of the consultation with id = {consultationId}");
+
+
         var comment = Mapper.MapCommentCreateToComment(commentCreateModel, doctorId, consultationId);
         consultation.CommentsNumber++;
 
-        parentComment?.Children?.Add(comment);
+        parentComment.Children?.Add(comment);
         await _db.Comments.AddAsync(comment);
-        if (parentComment != null) _db.Comments.Update(parentComment);
+        _db.Comments.Update(parentComment);
         _db.Consultations.Update(consultation);
 
         await _db.SaveChangesAsync();
 
         return new OkResult();
     }
+    
 
 
     public async Task<IActionResult> UpdateConsultationCommentAsync(Guid commentId,
         InspectionCommentCreateModel inspectionCommentCreateModel, Guid doctorId)
     {
-        var comment = await _db.Comments.FirstOrDefaultAsync(c => c.Id == commentId);
-
-        if (comment == null) throw new CommentNotFoundException($"Comment with id = {commentId} not found");
+        var comment = await _db.Comments.FirstOrDefaultAsync(c => c.Id == commentId)
+            ?? throw new CommentNotFoundException($"Comment with id = {commentId} not found");
 
         if (comment.AuthorId != doctorId)
             throw new ForbiddenLeaveCommentException(

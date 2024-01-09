@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using MisAPI.Exceptions;
 using MisAPI.Models.Response;
 using MisAPI.Services.Interfaces;
 using MisAPI.Validator;
@@ -22,6 +23,7 @@ public class ReportController : AuthorizeController
         [FromQuery] ICollection<Guid>? icdRoots = null
     )
     {
-        return await _reportService.GetIcdRootsReportAsync(start.ToUniversalTime(), end.ToUniversalTime(), icdRoots, DoctorId);
+        if (start == default || end == default) throw new IncorrectDateException("Invalid date. Date cannot be empty");
+        return await _reportService.GetIcdRootsReportAsync(start.ToUniversalTime(), end.ToUniversalTime(), icdRoots);
     }
 }

@@ -22,7 +22,7 @@ public class InspectionEditModel
 
     [DateValidator] public DateTime? DeathDate { get; set; }
     
-    [Required]  public IEnumerable<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
+    [Required]  public ICollection<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
     
 }
 

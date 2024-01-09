@@ -74,17 +74,16 @@ public class JwtService : IJwtService
         var doctorGuid = Guid.Parse(stringDoctorId ?? string.Empty);
         if (doctorGuid == Guid.Empty) throw new DoctorNotFoundException("doctor not found");
         await CheckIsRefreshTokenValidAsync(doctorGuid);
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(doctor => doctor.Id == doctorGuid);
-        if (doctor == null) throw new DoctorNotFoundException("doctor not found");
+        var doctor = await _db.Doctors.FirstOrDefaultAsync(doctor => doctor.Id == doctorGuid)
+            ?? throw new DoctorNotFoundException("doctor not found");
         return doctor.Id;
     }
 
 
     public Guid GetGuidFromRefreshToken(string? token)
     {
-        var refreshToken = _db.RefreshTokens.FirstOrDefault(t => t.Token == token);
-        if (refreshToken == null) throw new NullTokenException("Refresh token is null");
-
+        var refreshToken = _db.RefreshTokens.FirstOrDefault(t => t.Token == token) ?? throw new NullTokenException(
+            "Refresh token is null");
         return refreshToken.DoctorId;
     }
 

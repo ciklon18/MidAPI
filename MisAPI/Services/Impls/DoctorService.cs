@@ -14,12 +14,10 @@ namespace MisAPI.Services.Impls;
 public class DoctorService : IDoctorService
 {
     private readonly ApplicationDbContext _db;
-    private readonly IJwtService _jwtService;
 
-    public DoctorService(ApplicationDbContext db, IJwtService jwtService)
+    public DoctorService(ApplicationDbContext db)
     {
         _db = db;
-        _jwtService = jwtService;
     }
 
     public async Task<DoctorModel> GetDoctorProfileAsync(Guid doctorId)
@@ -32,7 +30,6 @@ public class DoctorService : IDoctorService
 
     public async Task<IActionResult> UpdateDoctorProfileAsync(Guid doctorId, DoctorEditModel doctorEditModel)
     {
-
         await CheckIsEmailInUseAsync(doctorEditModel.Email, doctorId);
         await CheckIsRefreshTokenValid(doctorId);
 
@@ -43,21 +40,11 @@ public class DoctorService : IDoctorService
         await _db.SaveChangesAsync();
         return new OkResult();
     }
-
-
-    private async Task<Guid> GetDoctorGuid()
-    {
-        var doctorId = await _jwtService.GetDoctorGuidAsync();
-        if (doctorId == Guid.Empty) throw new DoctorNotFoundException("Doctor not found");
-        return doctorId;
-    }
-
+    
 
     private async Task<Doctor> GetDoctorByGuidAsync(Guid doctorId)
     {
-        var doctor = await _db.Doctors.SingleOrDefaultAsync(u => u.Id == doctorId);
-        if (doctor == null) throw new DoctorNotFoundException("Doctor not found");
-        return doctor;
+        return await _db.Doctors.SingleOrDefaultAsync(u => u.Id == doctorId) ?? throw new DoctorNotFoundException("Doctor not found");
     }
 
     private async Task CheckIsRefreshTokenValid(Guid doctorId)

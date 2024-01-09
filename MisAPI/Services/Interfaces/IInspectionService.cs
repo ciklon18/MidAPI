@@ -8,14 +8,14 @@ namespace MisAPI.Services.Interfaces;
 
 public interface IInspectionService
 {
-    Task<InspectionModel> GetInspection(Guid id, Guid doctorId);
+    Task<InspectionModel> GetInspection(Guid id);
     Task<IActionResult> EditInspection(Guid id, InspectionEditModel inspectionEditModel, Guid doctorId);
-    Task<IEnumerable<InspectionPreviewModel>> GetInspectionChain(Guid id, Guid doctorId);
+    Task<ICollection<InspectionPreviewModel>> GetInspectionChain(Guid id);
 
-    Task<List<Diagnosis>> MapDiagnosesAsync(Guid inspectionId,
-        IEnumerable<DiagnosisCreateModel> diagnosisCreateModels);
+    Task<ICollection<Diagnosis>> MapDiagnosesAsync(Guid inspectionId,
+        ICollection<DiagnosisCreateModel> diagnosisCreateModels);
 
     Task ValidateConclusionAndDates(ConclusionAndDateValidationModel validationModel);
-    Task ValidateDiagnoses(IEnumerable<DiagnosisCreateModel> diagnoses);
+    Task ValidateDiagnoses(ICollection<DiagnosisCreateModel> diagnoses);
 
 }

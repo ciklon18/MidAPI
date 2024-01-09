@@ -45,6 +45,11 @@ public class ExceptionMiddleware
             HandleException(context, ex, StatusCodes.Status400BadRequest);
 
         }
+        catch (IncorrectDateException ex)
+        {
+            HandleException(context, ex, StatusCodes.Status400BadRequest);
+        }
+
         catch (IncorrectPasswordException ex)
         {
             HandleException(context, ex, StatusCodes.Status400BadRequest);

@@ -23,7 +23,7 @@ public class InspectionService : IInspectionService
         _icd10DictionaryService = icd10DictionaryService;
     }
 
-    public async Task<InspectionModel> GetInspection(Guid id, Guid doctorId)
+    public async Task<InspectionModel> GetInspection(Guid id)
     {
         var inspection = await _db.Inspections
                              .Include(i => i.Patient)
@@ -79,8 +79,8 @@ public class InspectionService : IInspectionService
         return new OkResult();
     }
 
-    public async Task<List<Diagnosis>> MapDiagnosesAsync(Guid inspectionId,
-        IEnumerable<DiagnosisCreateModel> diagnosisCreateModels)
+    public async Task<ICollection<Diagnosis>> MapDiagnosesAsync(Guid inspectionId,
+        ICollection<DiagnosisCreateModel> diagnosisCreateModels)
     {
         var diagnoses = new List<Diagnosis>();
 
@@ -130,7 +130,7 @@ public class InspectionService : IInspectionService
         };
     }
 
-    public Task ValidateDiagnoses(IEnumerable<DiagnosisCreateModel> diagnoses)
+    public Task ValidateDiagnoses(ICollection<DiagnosisCreateModel> diagnoses)
     {
         var diagnosesList = diagnoses.ToList();
         if (diagnoses == null || !diagnosesList.Any())
@@ -141,7 +141,7 @@ public class InspectionService : IInspectionService
     }
 
 
-    public async Task<IEnumerable<InspectionPreviewModel>> GetInspectionChain(Guid id, Guid doctorId)
+    public async Task<ICollection<InspectionPreviewModel>> GetInspectionChain(Guid id)
     {
         var rootInspection = await _db.Inspections
             .Include(inspection => inspection.Diagnoses)

@@ -31,7 +31,7 @@ public class InspectionCreateModel
     
     public Guid PreviousInspectionId { get; set; }
     [Required]
-    public IEnumerable<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
+    public ICollection<DiagnosisCreateModel> Diagnoses { get; set; } = null!;
     
-    public IEnumerable<ConsultationCreateModel>? Consultations { get; set; } = null!;
+    public ICollection<ConsultationCreateModel>? Consultations { get; set; } = null!;
 }
