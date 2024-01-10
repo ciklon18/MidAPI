@@ -3,6 +3,8 @@ using Microsoft.OpenApi.Models;
 using MisAPI.Configurations;
 using MisAPI.Data;
 using MisAPI.Middlewares;
+using MisAPI.Quartz.DataCollecting;
+using MisAPI.Quartz.Notification;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +46,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+
 builder.Services.AddJwt(builder.Configuration);
 builder.Services.AddSingletons(builder.Configuration);
 builder.Services.AddServices();
@@ -53,16 +56,19 @@ builder.Services.AddServices();
 var app = builder.Build();
 
 
+var applicationDbContext = app.Services.CreateScope().ServiceProvider.GetService<ApplicationDbContext>();
 
-var dbContext = app.Services.CreateScope().ServiceProvider.GetService<ApplicationDbContext>();
-
-if (dbContext != null)
+if (applicationDbContext != null)
 {
-    dbContext.Database.Migrate();
+    applicationDbContext.Database.Migrate();
     var migrator = app.Services.GetRequiredService<DatabaseMigrator>();
     migrator.MigrateDatabase();
-    
 }
+CollectingScheduler.Start(app.Services).Wait();
+
+NotificationScheduler.Start(app.Services).Wait();
+
+
 
 app.UseExceptionMiddleware();
 

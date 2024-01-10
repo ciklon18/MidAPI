@@ -25,4 +25,6 @@ public class Inspection
 
     [Column("diagnoses")] public ICollection<Diagnosis>? Diagnoses { get; set; } = new List<Diagnosis>();
     [Column("consultations")] public ICollection<Consultation>? Consultations { get; set; } = new List<Consultation>();
+    
+    [Column("is_checked")] public bool IsChecked { get; set; } = false;
 }
