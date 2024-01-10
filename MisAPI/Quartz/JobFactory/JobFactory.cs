@@ -1,7 +1,7 @@
 ﻿using Quartz;
 using Quartz.Spi;
 
-namespace MisAPI.Quartz;
+namespace MisAPI.Quartz.JobFactory;
 
 public class JobFactory : IJobFactory 
 {

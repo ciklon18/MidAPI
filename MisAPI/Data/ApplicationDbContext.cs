@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Diagnosis> Diagnoses { get; set; } = null!;
     public DbSet<Comment> Comments { get; set; } = null!;
     public DbSet<Consultation> Consultations { get; set; } = null!;
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

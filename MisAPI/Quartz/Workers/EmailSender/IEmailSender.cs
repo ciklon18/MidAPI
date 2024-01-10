@@ -1,4 +1,4 @@
-﻿namespace MisAPI.Worker;
+﻿namespace MisAPI.Quartz.Workers.EmailSender;
 
 public interface IEmailSender
 {

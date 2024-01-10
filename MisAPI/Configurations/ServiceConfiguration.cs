@@ -2,10 +2,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using MisAPI.Converters;
 using MisAPI.Data;
-using MisAPI.Quartz;
+using MisAPI.Quartz.DataCollecting;
+using MisAPI.Quartz.JobFactory;
+using MisAPI.Quartz.Notification;
+using MisAPI.Quartz.Workers.EmailSender;
 using MisAPI.Services.Impls;
 using MisAPI.Services.Interfaces;
-using MisAPI.Worker;
 
 namespace MisAPI.Configurations;
 
@@ -37,6 +39,7 @@ public static class ServiceConfiguration
 
         services.AddTransient<JobFactory>();
         services.AddScoped<NotificationBackgroundJob>();
+        services.AddScoped<DataCollectingJob>();
         services.AddScoped<IEmailSender, EmailSender>();
     }
 }
