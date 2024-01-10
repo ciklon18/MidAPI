@@ -53,6 +53,7 @@ builder.Services.AddServices();
 var app = builder.Build();
 
 
+
 var dbContext = app.Services.CreateScope().ServiceProvider.GetService<ApplicationDbContext>();
 
 if (dbContext != null)
