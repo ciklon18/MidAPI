@@ -134,7 +134,7 @@ public class PatientService : IPatientService
         var (baseInspectionId, previousInspectionId) =
             await GetBaseInspectionAsync(inspectionCreateModel, patient.Inspections, inspection);
 
-        
+
         var inspectionEntity = GetUpdatedInspectionEntity(inspection, doctorId, patient.Id, diagnoses, consultations,
             baseInspectionId, previousInspectionId);
 
@@ -160,8 +160,13 @@ public class PatientService : IPatientService
         inspection.DeathDate = inspection.DeathDate?.ToUniversalTime();
         inspection.Diagnoses = diagnoses;
         inspection.Consultations = consultations;
-        if (baseInspectionId != null) inspection.BaseInspectionId = baseInspectionId.Value;
-        if (previousInspectionId != null) inspection.PreviousInspectionId = previousInspectionId.Value;
+
+        inspection.BaseInspectionId = baseInspectionId != null && baseInspectionId.Value != Guid.Empty
+            ? baseInspectionId.Value
+            : null;
+        inspection.PreviousInspectionId = previousInspectionId != null && previousInspectionId.Value != Guid.Empty
+            ? previousInspectionId.Value
+            : null;
 
         return inspection;
     }
@@ -302,7 +307,7 @@ public class PatientService : IPatientService
         var icdRootsList = await _icd10DictionaryService.GetRootsByIcdList(icdRoots);
         var icdRootsIds = icdRootsList.Select(r => r.Id).ToList();
 
-        
+
         foreach (var inspection in await inspections.ToListAsync())
         {
             var diagnosis = inspection.Diagnoses?.FirstOrDefault(d => d.Type == DiagnosisType.Main);
@@ -311,8 +316,9 @@ public class PatientService : IPatientService
             {
                 diagnosisModel = Mapper.MapDiagnosisToDiagnosisModel(diagnosis);
             }
+
             if (diagnosisModel == null) continue;
-            
+
             var hasChain = inspection.BaseInspectionId == null;
             var hasNested = await _db.Inspections.AnyAsync(i => i.PreviousInspectionId == inspection.Id);
             previewInspectionsList.Add(
@@ -360,6 +366,7 @@ public class PatientService : IPatientService
                     i.Diagnoses != null
                     && i.Diagnoses.Any(d => d.Name.ToLower().Contains(requestLower)));
         }
+
         _logger.LogInformation("Inspections for patient with id = {id} were found", id);
         var result = newInspections
             .AsEnumerable()
