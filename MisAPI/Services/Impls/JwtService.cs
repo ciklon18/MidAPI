@@ -15,15 +15,15 @@ public class JwtService : IJwtService
     private readonly JwtSecurityTokenHandler _tokenHandler;
     private readonly Tokens _tokens;
     private readonly ApplicationDbContext _db;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<JwtService> _logger;
 
     public JwtService(JwtSecurityTokenHandler tokenHandler, Tokens tokens, ApplicationDbContext db,
-        IHttpContextAccessor httpContextAccessor)
+        ILogger<JwtService> logger)
     {
         _tokenHandler = tokenHandler;
         _tokens = tokens;
         _db = db;
-        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
 
@@ -50,6 +50,7 @@ public class JwtService : IJwtService
             Expires = expiration
         });
         await _db.SaveChangesAsync();
+        _logger.LogInformation("New refresh token was saved");
     }
 
     public Task RevokeRefreshTokenAsync(string refreshToken)
@@ -68,16 +69,7 @@ public class JwtService : IJwtService
         CheckTokenNotRevokedAndNotExpired(refreshToken);
     }
 
-    public async Task<Guid> GetDoctorGuidAsync()
-    {
-        var stringDoctorId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var doctorGuid = Guid.Parse(stringDoctorId ?? string.Empty);
-        if (doctorGuid == Guid.Empty) throw new DoctorNotFoundException("doctor not found");
-        await CheckIsRefreshTokenValidAsync(doctorGuid);
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(doctor => doctor.Id == doctorGuid)
-            ?? throw new DoctorNotFoundException("doctor not found");
-        return doctor.Id;
-    }
+
 
 
     public Guid GetGuidFromRefreshToken(string? token)
@@ -115,6 +107,7 @@ public class JwtService : IJwtService
                 new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
         };
         var token = _tokenHandler.CreateToken(tokenDescriptor);
+        _logger.LogInformation("New token was generated");
         return _tokenHandler.WriteToken(token);
     }
 

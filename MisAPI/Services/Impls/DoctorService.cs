@@ -14,16 +14,19 @@ namespace MisAPI.Services.Impls;
 public class DoctorService : IDoctorService
 {
     private readonly ApplicationDbContext _db;
+    private readonly ILogger<DoctorService> _logger;
 
-    public DoctorService(ApplicationDbContext db)
+    public DoctorService(ApplicationDbContext db, ILogger<DoctorService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<DoctorModel> GetDoctorProfileAsync(Guid doctorId)
     {
         await CheckIsRefreshTokenValid(doctorId);
         var doctor = await GetDoctorByGuidAsync(doctorId);
+        _logger.LogInformation("Doctor with id = {id} was found", doctorId);
         return Mapper.MapEntityDoctorToDoctorDto(doctor);
     }
 
@@ -38,6 +41,8 @@ public class DoctorService : IDoctorService
 
         _db.Doctors.Update(updatedDoctor);
         await _db.SaveChangesAsync();
+        _logger.LogInformation("Doctor with id = {id} was found and updated", doctorId);
+
         return new OkResult();
     }
     

@@ -10,15 +10,17 @@ using MisAPI.Services.Interfaces;
 
 namespace MisAPI.Services.Impls;
 
-public partial class AuthService : IAuthService
+public partial class  AuthService : IAuthService
 {
     private readonly ApplicationDbContext _db;
     private readonly IJwtService _jwtService;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(ApplicationDbContext db, IJwtService jwtService)
+    public AuthService(ApplicationDbContext db, IJwtService jwtService, ILogger<AuthService> logger)
     {
         _db = db;
         _jwtService = jwtService;
+        _logger = logger;
     }
 
 
@@ -31,6 +33,7 @@ public partial class AuthService : IAuthService
         var newDoctor = CreateHashDoctor(doctorRegisterModel);
         await _db.Doctors.AddAsync(newDoctor);
         await _db.SaveChangesAsync();
+        _logger.LogInformation("User successfully registered");
         return new RegistrationResponseModel { Id = newDoctor.Id };
     }
 
@@ -49,6 +52,7 @@ public partial class AuthService : IAuthService
 
         var refreshToken = existingRefreshToken ?? _jwtService.GenerateRefreshToken(doctor.Id);
         if (refreshToken != existingRefreshToken) await _jwtService.SaveRefreshTokenAsync(refreshToken, doctor.Id);
+        _logger.LogInformation("User successfully log in");
 
         return new TokenResponseModel { AccessToken = accessToken, RefreshToken = refreshToken };
     }
@@ -59,6 +63,7 @@ public partial class AuthService : IAuthService
         var refreshToken = await _jwtService.GetRefreshTokenByGuidAsync(doctorId) ??
                            throw new NullTokenException("Refresh token not found");
         await _jwtService.RevokeRefreshTokenAsync(refreshToken);
+        _logger.LogInformation("User successfully logout");
 
         return new ResponseModel { Status = null, Message = "Logout successful" };
     }
@@ -71,6 +76,7 @@ public partial class AuthService : IAuthService
         await _jwtService.ValidateRefreshTokenAsync(refreshRequestModel.RefreshToken);
         var doctor = await GetDoctorByGuid(doctorGuid);
         var accessToken = _jwtService.GenerateAccessToken(doctor.Id);
+        _logger.LogInformation("Access token was generated");
         return new RefreshResponseModel { AccessToken = accessToken };
     }
 

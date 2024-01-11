@@ -16,11 +16,15 @@ public class ConsultationService : IConsultationService
 {
     private readonly ApplicationDbContext _db;
     private readonly IIcd10DictionaryService _icd10DictionaryService;
+    private readonly ILogger<ConsultationService> _logger;
 
-    public ConsultationService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService)
+    public ConsultationService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
+        ILogger<ConsultationService> logger)
+
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
+        _logger = logger;
     }
 
 
@@ -51,7 +55,7 @@ public class ConsultationService : IConsultationService
                 c.SpecialityId == specialityId || c.Speciality.Id == specialityId))
             .OrderByDescending(i => i.CreateTime)
             .AsQueryable();
-        
+
         if (grouped)
         {
             inspections = inspections
@@ -73,7 +77,8 @@ public class ConsultationService : IConsultationService
 
         if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
-
+        _logger.LogInformation("Inspections for consultations with specialityId = {specialityId} were collected.",
+            specialityId);
         var inspectionsList = inspections
             .Skip((page - 1) * size)
             .Take(size)
@@ -87,14 +92,15 @@ public class ConsultationService : IConsultationService
     public async Task<ConsultationModel> GetConsultationAsync(Guid id)
     {
         var consultation = await _db.Consultations
-            .Include(c => c.RootComment)
-            .FirstOrDefaultAsync(c => c.Id == id)
-            ?? throw new ConsultationNotFoundException("Consultation not found");
-        
+                               .Include(c => c.RootComment)
+                               .FirstOrDefaultAsync(c => c.Id == id)
+                           ?? throw new ConsultationNotFoundException("Consultation not found");
+
         var consultationSpeciality = await _db.Specialities
-            .FirstOrDefaultAsync(s => s.Id == consultation.SpecialityId)
-            ?? throw new SpecialityNotFoundException($"Speciality with id = {consultation.SpecialityId} not found");
-        
+                                         .FirstOrDefaultAsync(s => s.Id == consultation.SpecialityId)
+                                     ?? throw new SpecialityNotFoundException(
+                                         $"Speciality with id = {consultation.SpecialityId} not found");
+        _logger.LogInformation("Consultation with id = {id} successfully found", id);
         var comments = await GetConsultationCommentsAsync(consultation);
 
         return Mapper.ConsultationToConsultationModel(consultation, consultationSpeciality, comments);
@@ -151,7 +157,7 @@ public class ConsultationService : IConsultationService
         if (doctor.SpecialityId != consultation.SpecialityId)
             throw new ForbiddenLeaveCommentException(
                 $"Doctor doesn't have a specialty to participate in the consultation with id = {consultationId}");
-        
+
         var parentComment = await _db.Comments
                                 .Include(c => c.Children)
                                 .FirstOrDefaultAsync(c => c.Id == commentCreateModel.ParentId)
@@ -172,17 +178,17 @@ public class ConsultationService : IConsultationService
         _db.Consultations.Update(consultation);
 
         await _db.SaveChangesAsync();
-
+        _logger.LogInformation("Comment to consultation with id = {id} and comment parentId = {parentId} was added",
+            consultationId, parentComment.Id);
         return new OkResult();
     }
-    
 
 
     public async Task<IActionResult> UpdateConsultationCommentAsync(Guid commentId,
         InspectionCommentCreateModel inspectionCommentCreateModel, Guid doctorId)
     {
         var comment = await _db.Comments.FirstOrDefaultAsync(c => c.Id == commentId)
-            ?? throw new CommentNotFoundException($"Comment with id = {commentId} not found");
+                      ?? throw new CommentNotFoundException($"Comment with id = {commentId} not found");
 
         if (comment.AuthorId != doctorId)
             throw new ForbiddenLeaveCommentException(
@@ -193,7 +199,7 @@ public class ConsultationService : IConsultationService
 
         _db.Comments.Update(comment);
         await _db.SaveChangesAsync();
-
+        _logger.LogInformation("Comment with id = {id} was updated", commentId);
         return new OkResult();
     }
 }

@@ -18,14 +18,16 @@ public class PatientService : IPatientService
     private readonly IIcd10DictionaryService _icd10DictionaryService;
     private readonly IJwtService _jwtService;
     private readonly IInspectionService _inspectionService;
+    private readonly ILogger<PatientService> _logger;
 
     public PatientService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
-        IJwtService jwtService, IInspectionService inspectionService)
+        IJwtService jwtService, IInspectionService inspectionService, ILogger<PatientService> logger)
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
         _jwtService = jwtService;
         _inspectionService = inspectionService;
+        _logger = logger;
     }
 
 
@@ -44,7 +46,7 @@ public class PatientService : IPatientService
         };
         await _db.Patients.AddAsync(patient);
         await _db.SaveChangesAsync();
-
+        _logger.LogInformation("New patient was created");
         return patientId;
     }
 
@@ -92,7 +94,7 @@ public class PatientService : IPatientService
 
         if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
-
+        _logger.LogInformation("Patients successfully collected");
         var patientModelList = patients
             .Skip((page - 1) * size)
             .Take(size)
@@ -132,7 +134,7 @@ public class PatientService : IPatientService
         var (baseInspectionId, previousInspectionId) =
             await GetBaseInspectionAsync(inspectionCreateModel, patient.Inspections, inspection);
 
-
+        
         var inspectionEntity = GetUpdatedInspectionEntity(inspection, doctorId, patient.Id, diagnoses, consultations,
             baseInspectionId, previousInspectionId);
 
@@ -140,7 +142,7 @@ public class PatientService : IPatientService
 
         await _db.Diagnoses.AddRangeAsync(diagnoses);
         await _db.Consultations.AddRangeAsync(consultations);
-
+        _logger.LogInformation("Create model was validated successfully and created new inspection");
         await _db.SaveChangesAsync();
         return inspection.Id;
     }
@@ -322,7 +324,7 @@ public class PatientService : IPatientService
 
         if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
-
+        _logger.LogInformation("Inspections with required conditions were found");
         previewInspectionsList = previewInspectionsList
             .Skip((page - 1) * size)
             .Take(size)
@@ -335,6 +337,7 @@ public class PatientService : IPatientService
     {
         var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == id);
         if (patient == null) throw new PatientNotFoundException($"Patient with id = {id} not found");
+        _logger.LogInformation("Patient with id = {id} was found", id);
         return Mapper.MapEntityPatientToPatientModel(patient);
     }
 
@@ -357,7 +360,7 @@ public class PatientService : IPatientService
                     i.Diagnoses != null
                     && i.Diagnoses.Any(d => d.Name.ToLower().Contains(requestLower)));
         }
-
+        _logger.LogInformation("Inspections for patient with id = {id} were found", id);
         var result = newInspections
             .AsEnumerable()
             .Select(Mapper.MapEntityInspectionToInspectionShortModel)

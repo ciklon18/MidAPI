@@ -12,11 +12,15 @@ public class ReportService : IReportService
 {
     private readonly ApplicationDbContext _db;
     private readonly IIcd10DictionaryService _icd10DictionaryService;
+    private readonly ILogger<ReportService> _logger;
 
-    public ReportService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService)
+    public ReportService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
+        ILogger<ReportService> logger)
+
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
+        _logger = logger;
     }
 
     public async Task<IcdRootsReportModel> GetIcdRootsReportAsync(DateTime start, DateTime end,
@@ -42,6 +46,10 @@ public class ReportService : IReportService
             .Include(x => x.Consultations)
             .Where(x => x.Date >= start && x.Date <= end)
             .ToListAsync();
+        if (!inspections.Any())
+        {
+            _logger.LogInformation("Inspections are empty");
+        }
         
         var patientDiseases = new Dictionary<Guid, Dictionary<Guid, int>>();
 
@@ -85,6 +93,7 @@ public class ReportService : IReportService
 
             records.Add(record);
         }
+        _logger.LogInformation("All data was collected for patients");
 
 
         return new IcdRootsReportModel

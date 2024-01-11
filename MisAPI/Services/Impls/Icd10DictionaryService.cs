@@ -10,10 +10,12 @@ namespace MisAPI.Services.Impls;
 public class Icd10DictionaryService : IIcd10DictionaryService
 {
     private readonly ApplicationDbContext _db;
+    private readonly ILogger<Icd10DictionaryService> _logger;
 
-    public Icd10DictionaryService(ApplicationDbContext db)
+    public Icd10DictionaryService(ApplicationDbContext db, ILogger<Icd10DictionaryService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<SpecialtiesPagedListModel> GetSpecialtiesAsync(string? name, int page, int size)
@@ -26,10 +28,10 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
         
-        var selectedSpecialties = specialties
+        _logger.LogInformation("Required specialties was found");
+        var selectedModelSpecialties = await specialties
             .Skip((page - 1) * size)
-            .Take(size);
-        var selectedModelSpecialties = await selectedSpecialties
+            .Take(size)
             .Select(s => new SpecialityModel(s.Id, s.Name, s.CreateTime))
             .ToListAsync();
         
@@ -43,13 +45,14 @@ public class Icd10DictionaryService : IIcd10DictionaryService
 
     public async Task<Icd10SearchModel> GetIcd10DiagnosesAsync(string? request, int page, int size)
     {
-        var lowerRequest = request != null ? request.ToLower() : "";
+        var lowerRequest = request != null ? request.ToLower() : string.Empty;
         var diagnoses = _db.Icd10
             .Where(d => d.IcdCode.ToLower().Contains(lowerRequest) || d.IcdName.ToLower().Contains(lowerRequest));
 
         var totalPages = (int)Math.Ceiling((double)await diagnoses.CountAsync() / size);
         if (page != 1 && page > totalPages)
             throw new InvalidValueForAttributePageException("Invalid value for attribute page");
+        _logger.LogInformation("Required diagnoses was found");
 
         var recordDiagnoses = await diagnoses
             .Skip((page - 1) * size)
@@ -66,6 +69,7 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         var roots = await _db.Icd10Roots
             .Select(r => new Icd10RecordModel(r.Id, r.CreateTime, r.Code, r.Name))
             .ToListAsync();
+        _logger.LogInformation("Roots successfully loaded");
         return new Icd10RootsResponseModel(roots);
     }
 
@@ -73,6 +77,7 @@ public class Icd10DictionaryService : IIcd10DictionaryService
     {
         var icd10 = await _db.Icd10.FirstOrDefaultAsync(d => d.IdGuid == icdDiagnosisId);
         if (icd10 == null) throw new DiagnosisNotFoundException($"Diagnosis with id = {icdDiagnosisId} not found");
+        _logger.LogInformation("Diagnosis with id = {id} was found", icdDiagnosisId);
         return new ExtendedDiagnosisModel
         {
             Id = icd10.IdGuid ?? new Guid(),
@@ -113,7 +118,7 @@ public class Icd10DictionaryService : IIcd10DictionaryService
         }
 
         return existingRoots
-            .Select(r => new Icd10RootModel(r.Id, r.CreateTime, r.Code ?? "", r.Name))
+            .Select(r => new Icd10RootModel(r.Id, r.CreateTime, r.Code ?? string.Empty, r.Name))
             .ToList();
     }
 

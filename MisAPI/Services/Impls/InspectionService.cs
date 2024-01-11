@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MisAPI.Data;
 using MisAPI.Entities;
 using MisAPI.Enums;
@@ -16,11 +17,15 @@ public class InspectionService : IInspectionService
 {
     private readonly ApplicationDbContext _db;
     private readonly IIcd10DictionaryService _icd10DictionaryService;
+    private readonly ILogger<InspectionService> _logger;
 
-    public InspectionService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService)
+    public InspectionService(ApplicationDbContext db, IIcd10DictionaryService icd10DictionaryService,
+        ILogger<InspectionService> logger)
+
     {
         _db = db;
         _icd10DictionaryService = icd10DictionaryService;
+        _logger = logger;
     }
 
     public async Task<InspectionModel> GetInspection(Guid id)
@@ -39,16 +44,18 @@ public class InspectionService : IInspectionService
                              .Include(i => i.Doctor)
                              .Include(i => i.Diagnoses)
                              .Include(i => i.Consultations)
-                             .FirstOrDefaultAsync(i => i.BaseInspectionId == id);
+                             .FirstOrDefaultAsync(i => i.Id == id);
 
         if (inspection == null) throw new InspectionNotFoundException("Inspection not found.");
+        
+        _logger.LogInformation("Inspection with id = {id} was found", id);
         var diagnoses = inspection.Diagnoses != null
             ? inspection.Diagnoses.Select(Mapper.MapDiagnosisToDiagnosisModel)
             : new List<DiagnosisModel>();
         var consultations = inspection.Consultations != null
             ? inspection.Consultations.Select(Mapper.MapConsultationToInspectionConsultationModel)
             : new List<InspectionConsultationModel>();
-
+        
         return Mapper.MapEntityInspectionToInspectionModel(inspection, diagnoses, consultations);
     }
 
@@ -59,6 +66,7 @@ public class InspectionService : IInspectionService
             .Include(i => i.Diagnoses)
             .FirstOrDefaultAsync(i => i.Id == id);
         if (inspectionEntity == null) throw new InspectionNotFoundException($"Inspection with id = {id} not found");
+        _logger.LogInformation("Inspection with id = {id} was found", id);
         await ValidateInspectionEntity(inspectionEntity, doctorId);
         await ValidateConclusionAndDates(
             Mapper.MapInspectionEditModelToConclusionAndDateValidationModel(inspectionEditModel));
@@ -75,6 +83,7 @@ public class InspectionService : IInspectionService
         _db.Inspections.Update(updatedInspectionEntity);
         await _db.Diagnoses.AddRangeAsync(diagnoses);
         await _db.SaveChangesAsync();
+        _logger.LogInformation("Edit model is correct. So inspection was updated successfully");
 
         return new OkResult();
     }
@@ -152,7 +161,7 @@ public class InspectionService : IInspectionService
         if (rootInspection == null) throw new InspectionNotFoundException("Inspection not found.");
         if (rootInspection.PreviousInspectionId != null || rootInspection.BaseInspectionId != null)
             throw new InspectionIsNotRootException("Inspection is not root.");
-
+        _logger.LogInformation("Root inspection successfully found");
         var inspections = new List<InspectionPreviewModel>();
         var currentInspection = await _db.Inspections
             .Include(inspection => inspection.Diagnoses)
@@ -177,7 +186,7 @@ public class InspectionService : IInspectionService
                 .Include(inspection => inspection.Patient)
                 .FirstOrDefaultAsync(i => i.PreviousInspectionId == currentInspection.Id);
         }
-
+        _logger.LogInformation("All inspections from chain were collected");
         return inspections;
     }
 }
